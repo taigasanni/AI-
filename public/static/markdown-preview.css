@@ -175,15 +175,15 @@
   background-color: #9ca3af;
 }
 
-/* 引用 - ミニマルデザイン */
+/* 引用 - ミニマルデザイン（背景のみ） */
 .markdown-preview blockquote,
 .article-content blockquote,
 #article-preview-content blockquote {
   margin: 28px 0;
-  padding: 16px 20px 16px 20px;
-  border-left: 3px solid #d1d5db;
-  background: #f9fafb;
-  border-radius: 0;
+  padding: 16px 20px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 8px;
   font-style: normal;
   color: #4b5563;
 }
@@ -203,11 +203,10 @@
   font-weight: 600;
 }
 
-/* ポイント・注意ボックス */
+/* ポイント・注意ボックス（背景のみ、縦線なし） */
 .markdown-preview blockquote:has(p:first-child:contains("💡")),
 .article-content blockquote:has(p:first-child:contains("💡")),
 #article-preview-content blockquote:has(p:first-child:contains("💡")) {
-  border-left-color: #3b82f6;
   background: #eff6ff;
   color: #1e40af;
 }
@@ -215,7 +214,6 @@
 .markdown-preview blockquote:has(p:first-child:contains("⚠️")),
 .article-content blockquote:has(p:first-child:contains("⚠️")),
 #article-preview-content blockquote:has(p:first-child:contains("⚠️")) {
-  border-left-color: #f59e0b;
   background: #fffbeb;
   color: #92400e;
 }
@@ -223,7 +221,6 @@
 .markdown-preview blockquote:has(p:first-child:contains("✅")),
 .article-content blockquote:has(p:first-child:contains("✅")),
 #article-preview-content blockquote:has(p:first-child:contains("✅")) {
-  border-left-color: #10b981;
   background: #f0fdf4;
   color: #065f46;
 }

@@ -421,10 +421,11 @@ publicRoutes.get('/blog/:id', async (c) => {
               margin-bottom: 1em;
             }
             .article-content blockquote {
-              border-left: 4px solid #3b82f6;
-              padding-left: 1em;
-              margin-left: 0;
-              margin-bottom: 1em;
+              background: #f3f4f6;
+              padding: 1em;
+              margin: 1em 0;
+              border-radius: 8px;
+              border: none;
               color: #4b5563;
             }
             .article-content a {
