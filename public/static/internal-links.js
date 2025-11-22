@@ -1,11 +1,11 @@
 /**
  * ===================================
- * 内部リンク管理 - トグル式マインドマップ
- * Internal Links Management - Toggle Mind Map
+ * 内部リンク管理 - 2カラムドラッグ&ドロップ
+ * Internal Links Management - Two Column Drag & Drop
  * ===================================
  */
 
-console.log('🗺️ Loading Toggle Mind Map Internal Links Module...');
+console.log('🗺️ Loading Two Column Internal Links Module...');
 
 // グローバル変数
 let articles = [];
@@ -16,7 +16,7 @@ let dragSourceHeading = null;
 // 初期化
 // ===================================
 function showInternalLinks() {
-  console.log('📋 Initializing Toggle Mind Map...');
+  console.log('📋 Initializing Two Column View...');
   
   updateSidebarActive('links');
   
@@ -27,14 +27,14 @@ function showInternalLinks() {
   }
   
   contentArea.innerHTML = `
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-full">
       <!-- ヘッダー -->
       <div class="mb-6">
         <h1 class="text-4xl font-bold text-gray-900 flex items-center">
-          <i class="fas fa-project-diagram text-blue-600 mr-4"></i>
-          内部リンク管理 - トグル式マインドマップ
+          <i class="fas fa-link text-blue-600 mr-4"></i>
+          内部リンク管理
         </h1>
-        <p class="text-gray-600 mt-2 text-lg">記事を展開して見出しを表示、見出しをドラッグ&ドロップで接続</p>
+        <p class="text-gray-600 mt-2 text-lg">左側から右側へ見出しをドラッグ&ドロップしてリンクを作成</p>
       </div>
 
       <!-- ツールバー -->
@@ -44,11 +44,11 @@ function showInternalLinks() {
             <button onclick="refreshMindMap()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow">
               <i class="fas fa-sync-alt mr-2"></i>更新
             </button>
-            <button onclick="expandAllArticles()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
-              <i class="fas fa-expand-alt mr-2"></i>すべて展開
+            <button onclick="expandAllArticles('left')" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
+              <i class="fas fa-expand-alt mr-2"></i>左側すべて展開
             </button>
-            <button onclick="collapseAllArticles()" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-bold shadow">
-              <i class="fas fa-compress-alt mr-2"></i>すべて折りたたみ
+            <button onclick="expandAllArticles('right')" class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow">
+              <i class="fas fa-expand-alt mr-2"></i>右側すべて展開
             </button>
             <button onclick="clearAllLinks()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow">
               <i class="fas fa-trash mr-2"></i>全リンク削除
@@ -57,21 +57,56 @@ function showInternalLinks() {
         </div>
       </div>
 
-      <!-- マインドマップコンテナ -->
-      <div class="grid grid-cols-1 gap-6">
-        <div id="articles-container" class="space-y-4">
-          <!-- 記事がここに表示されます -->
+      <!-- 2カラムレイアウト -->
+      <div class="grid grid-cols-2 gap-6">
+        <!-- 左側: リンク元 -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-xl p-6 border-4 border-blue-300">
+          <div class="mb-4 pb-4 border-b-4 border-blue-400">
+            <h2 class="text-2xl font-bold text-blue-900 flex items-center">
+              <i class="fas fa-hand-point-right text-3xl mr-3"></i>
+              リンク元（ここからドラッグ）
+            </h2>
+            <p class="text-blue-700 mt-2">見出しを右側にドラッグしてリンクを作成</p>
+          </div>
+          <div id="left-articles" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
+            <!-- 左側の記事がここに表示されます -->
+          </div>
+        </div>
+
+        <!-- 右側: リンク先 -->
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-xl p-6 border-4 border-green-300">
+          <div class="mb-4 pb-4 border-b-4 border-green-400">
+            <h2 class="text-2xl font-bold text-green-900 flex items-center">
+              <i class="fas fa-bullseye text-3xl mr-3"></i>
+              リンク先（ここにドロップ）
+            </h2>
+            <p class="text-green-700 mt-2">左側の見出しをここにドロップ</p>
+          </div>
+          <div id="right-articles" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
+            <!-- 右側の記事がここに表示されます -->
+          </div>
         </div>
       </div>
 
       <!-- 使い方 -->
-      <div class="mt-6 bg-blue-50 rounded-lg p-6">
-        <h3 class="font-bold text-lg text-gray-800 mb-4">📖 操作方法:</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-          <div><i class="fas fa-chevron-down text-blue-600 mr-2"></i><strong>記事タイトル</strong>をクリック → 見出しを展開/折りたたみ</div>
-          <div><i class="fas fa-hand-rock text-green-600 mr-2"></i><strong>見出し</strong>をドラッグ → 他の見出しにドロップしてリンク作成</div>
-          <div><i class="fas fa-link text-purple-600 mr-2"></i><strong>作成されたリンク</strong>は見出しの下に表示されます</div>
-          <div><i class="fas fa-times-circle text-red-600 mr-2"></i><strong>リンクのゴミ箱アイコン</strong>をクリック → リンクを削除</div>
+      <div class="mt-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-6 border-2 border-blue-300">
+        <h3 class="font-bold text-xl text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-info-circle text-blue-600 text-2xl mr-3"></i>
+          操作方法
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-700">
+          <div class="bg-white p-4 rounded-lg shadow">
+            <i class="fas fa-chevron-down text-blue-600 mr-2 text-xl"></i>
+            <strong>記事タイトル</strong>をクリック → 見出しを展開/折りたたみ
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow">
+            <i class="fas fa-hand-rock text-green-600 mr-2 text-xl"></i>
+            <strong>左側の見出し</strong>をドラッグ → 右側の見出しにドロップ
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow">
+            <i class="fas fa-times-circle text-red-600 mr-2 text-xl"></i>
+            <strong>作成済みリンク</strong>のゴミ箱アイコンで削除
+          </div>
         </div>
       </div>
     </div>
@@ -79,7 +114,7 @@ function showInternalLinks() {
     <!-- リンク作成モーダル -->
     <div id="link-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onclick="if(event.target.id==='link-modal') closeLinkModal()">
       <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+        <div class="bg-gradient-to-r from-blue-600 to-green-600 text-white p-6 rounded-t-2xl">
           <div class="flex justify-between items-center">
             <h3 class="text-2xl font-bold">
               <i class="fas fa-link mr-3"></i>リンク詳細設定
@@ -91,27 +126,33 @@ function showInternalLinks() {
         </div>
         <div class="p-8">
           <div class="space-y-6">
-            <div class="bg-blue-50 p-4 rounded-lg">
-              <p class="text-sm font-semibold text-gray-600 mb-2">リンク元:</p>
+            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-600">
+              <p class="text-sm font-semibold text-gray-600 mb-2">
+                <i class="fas fa-arrow-right text-blue-600 mr-2"></i>リンク元:
+              </p>
               <p id="modal-from" class="text-lg font-bold text-gray-900"></p>
             </div>
             <div class="text-center">
-              <i class="fas fa-arrow-down text-4xl text-blue-600"></i>
+              <i class="fas fa-arrow-down text-5xl text-gradient bg-gradient-to-r from-blue-600 to-green-600"></i>
             </div>
-            <div class="bg-green-50 p-4 rounded-lg">
-              <p class="text-sm font-semibold text-gray-600 mb-2">リンク先:</p>
+            <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-600">
+              <p class="text-sm font-semibold text-gray-600 mb-2">
+                <i class="fas fa-bullseye text-green-600 mr-2"></i>リンク先:
+              </p>
               <p id="modal-to" class="text-lg font-bold text-gray-900"></p>
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">リンクテキスト:</label>
-              <input type="text" id="modal-link-text" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="例: 詳しくはこちら">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-edit text-blue-600 mr-2"></i>リンクテキスト:
+              </label>
+              <input type="text" id="modal-link-text" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg" placeholder="例: 詳しくはこちら">
             </div>
           </div>
           <div class="flex justify-end space-x-4 mt-8">
-            <button onclick="closeLinkModal()" class="px-8 py-3 bg-gray-300 text-gray-800 font-bold rounded-lg hover:bg-gray-400">
-              キャンセル
+            <button onclick="closeLinkModal()" class="px-8 py-3 bg-gray-300 text-gray-800 font-bold rounded-lg hover:bg-gray-400 shadow">
+              <i class="fas fa-times mr-2"></i>キャンセル
             </button>
-            <button onclick="confirmCreateLink()" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
+            <button onclick="confirmCreateLink()" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-green-700 shadow-lg">
               <i class="fas fa-check mr-2"></i>作成
             </button>
           </div>
@@ -146,7 +187,8 @@ async function loadMindMapData() {
       });
       const headingsData = await headingsRes.json();
       article.headings = headingsData.success ? (headingsData.data || []) : [];
-      article.expanded = false;
+      article.expandedLeft = false;
+      article.expandedRight = false;
     }
     
     // 内部リンク取得
@@ -158,7 +200,7 @@ async function loadMindMapData() {
     
     console.log('✅ Data loaded:', { articles: articles.length, links: links.length });
     
-    renderMindMap();
+    renderBothColumns();
     
   } catch (error) {
     console.error('❌ Error:', error);
@@ -167,46 +209,58 @@ async function loadMindMapData() {
 }
 
 // ===================================
-// マインドマップ描画
+// 両カラム描画
 // ===================================
-function renderMindMap() {
-  console.log('🎨 Rendering toggle mind map...');
+function renderBothColumns() {
+  renderColumn('left');
+  renderColumn('right');
+}
+
+function renderColumn(side) {
+  console.log(`🎨 Rendering ${side} column...`);
   
-  const container = document.getElementById('articles-container');
+  const containerId = side === 'left' ? 'left-articles' : 'right-articles';
+  const container = document.getElementById(containerId);
   if (!container) return;
+  
+  const expandedProp = side === 'left' ? 'expandedLeft' : 'expandedRight';
+  const isDragSource = side === 'left';
   
   container.innerHTML = '';
   
-  articles.forEach((article, index) => {
+  articles.forEach((article) => {
     const articleCard = document.createElement('div');
     articleCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all';
     
-    // 記事ヘッダー（トグルボタン）
+    // 記事ヘッダー
     const header = document.createElement('div');
-    header.className = 'bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 cursor-pointer hover:from-blue-700 hover:to-blue-800 flex items-center justify-between';
-    header.onclick = () => toggleArticle(article.id);
+    const bgColor = side === 'left' ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gradient-to-r from-green-600 to-green-700';
+    header.className = `${bgColor} text-white p-4 cursor-pointer hover:opacity-90 flex items-center justify-between`;
+    header.onclick = () => toggleArticle(article.id, side);
     
     header.innerHTML = `
       <div class="flex items-center space-x-3">
-        <i class="fas ${article.expanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xl"></i>
+        <i class="fas ${article[expandedProp] ? 'fa-chevron-down' : 'fa-chevron-right'} text-xl"></i>
         <i class="fas fa-newspaper text-xl"></i>
-        <h3 class="text-xl font-bold">${article.title}</h3>
+        <h3 class="text-lg font-bold">${article.title}</h3>
       </div>
       <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-        ${article.headings.length}個の見出し
+        ${article.headings.length}個
       </span>
     `;
     
     articleCard.appendChild(header);
     
     // 見出しコンテナ
-    if (article.expanded) {
+    if (article[expandedProp]) {
       const headingsContainer = document.createElement('div');
       headingsContainer.className = 'p-4 bg-gray-50';
       
       if (article.headings.length === 0) {
         headingsContainer.innerHTML = `
-          <p class="text-gray-500 italic">この記事には見出しがありません</p>
+          <p class="text-gray-500 italic text-center py-4">
+            <i class="fas fa-info-circle mr-2"></i>この記事には見出しがありません
+          </p>
         `;
       } else {
         article.headings.forEach((heading) => {
@@ -221,66 +275,79 @@ function renderMindMap() {
             4: 'bg-pink-100 border-pink-500 text-pink-900'
           };
           const color = levelColors[heading.level] || 'bg-gray-100 border-gray-500 text-gray-900';
-          const indent = (heading.level - 1) * 20;
+          const indent = (heading.level - 1) * 16;
           
-          // 見出しカード（ドラッグ可能）
+          // 見出しカード
           const headingCard = document.createElement('div');
-          headingCard.className = `${color} border-l-4 p-3 rounded-lg cursor-move hover:shadow-lg transition-all`;
+          headingCard.className = `${color} border-l-4 p-3 rounded-lg transition-all ${isDragSource ? 'cursor-move hover:shadow-lg hover:scale-105' : 'cursor-pointer hover:shadow-md'}`;
           headingCard.style.marginLeft = `${indent}px`;
-          headingCard.draggable = true;
           
-          headingCard.innerHTML = `
-            <div class="flex items-center justify-between">
+          if (isDragSource) {
+            headingCard.draggable = true;
+            headingCard.innerHTML = `
               <div class="flex items-center space-x-2">
-                <i class="fas fa-grip-vertical text-gray-400"></i>
+                <i class="fas fa-grip-vertical text-gray-500"></i>
+                <span class="font-semibold">H${heading.level}</span>
+                <span class="font-bold">${heading.text}</span>
+                <i class="fas fa-arrow-right text-blue-600 ml-auto"></i>
+              </div>
+            `;
+            
+            // ドラッグイベント（左側のみ）
+            headingCard.ondragstart = (e) => handleDragStart(e, article, heading);
+            headingCard.ondragend = (e) => handleDragEnd(e);
+          } else {
+            headingCard.innerHTML = `
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-bullseye text-green-600"></i>
                 <span class="font-semibold">H${heading.level}</span>
                 <span class="font-bold">${heading.text}</span>
               </div>
-              <i class="fas fa-link text-blue-600"></i>
-            </div>
-          `;
-          
-          // ドラッグイベント
-          headingCard.ondragstart = (e) => handleDragStart(e, article, heading);
-          headingCard.ondragover = (e) => handleDragOver(e);
-          headingCard.ondrop = (e) => handleDrop(e, article, heading);
-          headingCard.ondragend = (e) => handleDragEnd(e);
+            `;
+            
+            // ドロップイベント（右側のみ）
+            headingCard.ondragover = (e) => handleDragOver(e);
+            headingCard.ondrop = (e) => handleDrop(e, article, heading);
+            headingCard.ondragleave = (e) => handleDragLeave(e);
+          }
           
           headingDiv.appendChild(headingCard);
           
-          // この見出しから出ているリンクを表示
-          const headingLinks = links.filter(link => 
-            link.from_article_id === article.id && 
-            link.from_heading === heading.text &&
-            link.is_active
-          );
-          
-          if (headingLinks.length > 0) {
-            const linksContainer = document.createElement('div');
-            linksContainer.className = 'ml-8 mt-2 space-y-2';
+          // 左側の場合、この見出しから出ているリンクを表示
+          if (isDragSource) {
+            const headingLinks = links.filter(link => 
+              link.from_article_id === article.id && 
+              link.from_heading === heading.text &&
+              link.is_active
+            );
             
-            headingLinks.forEach(link => {
-              const toArticle = articles.find(a => a.id === link.to_article_id);
-              const linkDiv = document.createElement('div');
-              linkDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-2 rounded flex items-center justify-between';
+            if (headingLinks.length > 0) {
+              const linksContainer = document.createElement('div');
+              linksContainer.className = 'ml-8 mt-2 space-y-2';
               
-              linkDiv.innerHTML = `
-                <div class="flex items-center space-x-2">
-                  <i class="fas fa-arrow-right text-blue-600"></i>
-                  <span class="text-sm font-semibold text-blue-900">${link.link_text}</span>
-                  <i class="fas fa-arrow-right text-gray-400"></i>
-                  <span class="text-sm text-gray-700">${toArticle ? toArticle.title : '不明な記事'}</span>
-                  ${link.to_heading ? `<span class="text-xs text-gray-500">→ ${link.to_heading}</span>` : ''}
-                </div>
-                <button onclick="deleteLink(${link.id})" class="text-red-600 hover:text-red-800 px-2">
-                  <i class="fas fa-trash"></i>
-                </button>
-              `;
+              headingLinks.forEach(link => {
+                const toArticle = articles.find(a => a.id === link.to_article_id);
+                const linkDiv = document.createElement('div');
+                linkDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-2 rounded flex items-center justify-between shadow-sm';
+                
+                linkDiv.innerHTML = `
+                  <div class="flex items-center space-x-2 text-sm">
+                    <i class="fas fa-link text-blue-600"></i>
+                    <span class="font-semibold text-blue-900">${link.link_text}</span>
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                    <span class="text-gray-700">${toArticle ? toArticle.title : '不明'}</span>
+                    ${link.to_heading ? `<span class="text-xs text-gray-500">→ ${link.to_heading}</span>` : ''}
+                  </div>
+                  <button onclick="deleteLink(${link.id})" class="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-100">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                `;
+                
+                linksContainer.appendChild(linkDiv);
+              });
               
-              linksContainer.appendChild(linkDiv);
-            });
-            
-            headingDiv.appendChild(linksContainer);
+              headingDiv.appendChild(linksContainer);
+            }
           }
           
           headingsContainer.appendChild(headingDiv);
@@ -299,9 +366,9 @@ function renderMindMap() {
 // ===================================
 function handleDragStart(e, article, heading) {
   dragSourceHeading = { article, heading };
-  e.target.style.opacity = '0.5';
+  e.target.style.opacity = '0.4';
+  e.target.classList.add('ring-4', 'ring-blue-400');
   e.dataTransfer.effectAllowed = 'link';
-  e.dataTransfer.setData('text/html', e.target.innerHTML);
   console.log('🎯 Drag started:', heading.text);
 }
 
@@ -310,8 +377,12 @@ function handleDragOver(e) {
     e.preventDefault();
   }
   e.dataTransfer.dropEffect = 'link';
-  e.target.closest('.cursor-move')?.classList.add('ring-4', 'ring-blue-400');
+  e.target.closest('.cursor-pointer')?.classList.add('ring-4', 'ring-green-400', 'scale-105');
   return false;
+}
+
+function handleDragLeave(e) {
+  e.target.closest('.cursor-pointer')?.classList.remove('ring-4', 'ring-green-400', 'scale-105');
 }
 
 function handleDrop(e, targetArticle, targetHeading) {
@@ -320,16 +391,9 @@ function handleDrop(e, targetArticle, targetHeading) {
   }
   e.preventDefault();
   
-  e.target.closest('.cursor-move')?.classList.remove('ring-4', 'ring-blue-400');
+  e.target.closest('.cursor-pointer')?.classList.remove('ring-4', 'ring-green-400', 'scale-105');
   
   if (!dragSourceHeading) return false;
-  
-  // 同じ見出しへのドロップは無視
-  if (dragSourceHeading.article.id === targetArticle.id && 
-      dragSourceHeading.heading.id === targetHeading.id) {
-    console.log('⚠️ Cannot link to same heading');
-    return false;
-  }
   
   // 同じ記事内のリンクは禁止
   if (dragSourceHeading.article.id === targetArticle.id) {
@@ -349,7 +413,7 @@ function handleDrop(e, targetArticle, targetHeading) {
 
 function handleDragEnd(e) {
   e.target.style.opacity = '1';
-  e.target.closest('.cursor-move')?.classList.remove('ring-4', 'ring-blue-400');
+  e.target.classList.remove('ring-4', 'ring-blue-400');
   dragSourceHeading = null;
 }
 
@@ -421,22 +485,26 @@ async function confirmCreateLink() {
 // ===================================
 // 記事の展開/折りたたみ
 // ===================================
-function toggleArticle(articleId) {
+function toggleArticle(articleId, side) {
   const article = articles.find(a => a.id === articleId);
   if (article) {
-    article.expanded = !article.expanded;
-    renderMindMap();
+    if (side === 'left') {
+      article.expandedLeft = !article.expandedLeft;
+    } else {
+      article.expandedRight = !article.expandedRight;
+    }
+    renderColumn(side);
   }
 }
 
-function expandAllArticles() {
-  articles.forEach(article => article.expanded = true);
-  renderMindMap();
-}
-
-function collapseAllArticles() {
-  articles.forEach(article => article.expanded = false);
-  renderMindMap();
+function expandAllArticles(side) {
+  if (side === 'left') {
+    articles.forEach(article => article.expandedLeft = true);
+    renderColumn('left');
+  } else if (side === 'right') {
+    articles.forEach(article => article.expandedRight = true);
+    renderColumn('right');
+  }
 }
 
 // ===================================
@@ -485,10 +553,9 @@ async function deleteLink(linkId) {
 window.showInternalLinks = showInternalLinks;
 window.refreshMindMap = refreshMindMap;
 window.expandAllArticles = expandAllArticles;
-window.collapseAllArticles = collapseAllArticles;
 window.clearAllLinks = clearAllLinks;
 window.deleteLink = deleteLink;
 window.closeLinkModal = closeLinkModal;
 window.confirmCreateLink = confirmCreateLink;
 
-console.log('✅ Toggle Mind Map Internal Links Module Loaded!');
+console.log('✅ Two Column Internal Links Module Loaded!');
