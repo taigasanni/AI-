@@ -1316,3 +1316,229 @@ async function deleteKeyword(id) {
     console.error('Delete keyword error:', error);
   }
 }
+
+// ===================================
+// 設定画面
+// ===================================
+async function showSettings() {
+  updateSidebarActive('settings');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">
+      <i class="fas fa-cog text-gray-700 mr-3"></i>
+      設定
+    </h1>
+    
+    <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-key text-blue-600 mr-2"></i>
+        APIキー設定
+      </h2>
+      <p class="text-gray-600 mb-6">AI記事生成機能を使用するには、OpenAI APIキーを設定してください。</p>
+      
+      <div class="space-y-6">
+        <!-- OpenAI APIキー -->
+        <div class="border rounded-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/openai/openai-original.svg" alt="OpenAI" class="w-8 h-8 mr-3" onerror="this.style.display='none'">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">OpenAI API</h3>
+                <p class="text-sm text-gray-600">GPT-4o-miniによる記事生成</p>
+              </div>
+            </div>
+            <span id="openai-status" class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600">未設定</span>
+          </div>
+          
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">APIキー</label>
+              <div class="flex gap-2">
+                <input 
+                  type="password" 
+                  id="openai-api-key" 
+                  class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
+                  placeholder="sk-proj-..."
+                >
+                <button onclick="toggleApiKeyVisibility('openai')" class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                  <i class="fas fa-eye" id="openai-eye-icon"></i>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                <i class="fas fa-info-circle mr-1"></i>
+                APIキーは <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">OpenAI Platform</a> で取得できます
+              </p>
+            </div>
+            
+            <div id="openai-message" class="text-sm"></div>
+            
+            <div class="flex gap-2">
+              <button onclick="saveApiKey('openai')" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-save mr-2"></i>保存
+              </button>
+              <button onclick="testApiKey('openai')" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                <i class="fas fa-check-circle mr-2"></i>テスト
+              </button>
+              <button onclick="deleteApiKey('openai')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Anthropic APIキー (将来対応) -->
+        <div class="border rounded-lg p-6 opacity-50">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+              <i class="fas fa-robot text-3xl text-purple-600 mr-3"></i>
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">Anthropic API</h3>
+                <p class="text-sm text-gray-600">Claude による記事生成 (近日対応予定)</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600">準備中</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <h3 class="text-lg font-bold text-blue-800 mb-2">
+        <i class="fas fa-shield-alt mr-2"></i>
+        セキュリティについて
+      </h3>
+      <ul class="text-sm text-blue-700 space-y-2">
+        <li><i class="fas fa-check mr-2"></i>APIキーはデータベースに保存され、あなたのアカウントでのみ使用されます</li>
+        <li><i class="fas fa-check mr-2"></i>APIキーは暗号化されて保存されます</li>
+        <li><i class="fas fa-check mr-2"></i>他のユーザーがあなたのAPIキーにアクセスすることはできません</li>
+        <li><i class="fas fa-info-circle mr-2"></i>APIキーを削除すると、環境変数のデフォルトキーが使用されます</li>
+      </ul>
+    </div>
+  `;
+  
+  // 既存のAPIキーをロード
+  loadExistingApiKeys();
+}
+
+async function loadExistingApiKeys() {
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.data.length > 0) {
+      data.data.forEach(key => {
+        if (key.provider === 'openai' && key.has_key) {
+          document.getElementById('openai-status').textContent = '設定済み';
+          document.getElementById('openai-status').className = 'px-3 py-1 text-sm rounded-full bg-green-100 text-green-700';
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Load API keys error:', error);
+  }
+}
+
+function toggleApiKeyVisibility(provider) {
+  const input = document.getElementById(`${provider}-api-key`);
+  const icon = document.getElementById(`${provider}-eye-icon`);
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+
+async function saveApiKey(provider) {
+  const apiKey = document.getElementById(`${provider}-api-key`).value;
+  const messageEl = document.getElementById(`${provider}-message`);
+  
+  if (!apiKey) {
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">APIキーを入力してください</div>';
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ provider, api_key: apiKey })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded"><i class="fas fa-check mr-2"></i>APIキーを保存しました</div>';
+      document.getElementById(`${provider}-status`).textContent = '設定済み';
+      document.getElementById(`${provider}-status`).className = 'px-3 py-1 text-sm rounded-full bg-green-100 text-green-700';
+      
+      // 入力フィールドをクリア
+      setTimeout(() => {
+        document.getElementById(`${provider}-api-key`).value = '';
+      }, 1000);
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-times mr-2"></i>${data.error || 'APIキーの保存に失敗しました'}</div>`;
+    }
+  } catch (error) {
+    console.error('Save API key error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-times mr-2"></i>APIキーの保存に失敗しました</div>';
+  }
+}
+
+async function testApiKey(provider) {
+  const messageEl = document.getElementById(`${provider}-message`);
+  messageEl.innerHTML = '<div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded"><i class="fas fa-spinner fa-spin mr-2"></i>APIキーをテスト中...</div>';
+  
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys/${provider}/test`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded"><i class="fas fa-check-circle mr-2"></i>APIキーは有効です</div>';
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-exclamation-triangle mr-2"></i>${data.error || 'APIキーが無効です'}</div>`;
+    }
+  } catch (error) {
+    console.error('Test API key error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-times mr-2"></i>APIキーのテストに失敗しました</div>';
+  }
+}
+
+async function deleteApiKey(provider) {
+  if (!confirm('このAPIキーを削除してもよろしいですか?')) return;
+  
+  const messageEl = document.getElementById(`${provider}-message`);
+  
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys/${provider}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded"><i class="fas fa-check mr-2"></i>APIキーを削除しました</div>';
+      document.getElementById(`${provider}-status`).textContent = '未設定';
+      document.getElementById(`${provider}-status`).className = 'px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600';
+      document.getElementById(`${provider}-api-key`).value = '';
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-times mr-2"></i>${data.error || 'APIキーの削除に失敗しました'}</div>`;
+    }
+  } catch (error) {
+    console.error('Delete API key error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded"><i class="fas fa-times mr-2"></i>APIキーの削除に失敗しました</div>';
+  }
+}

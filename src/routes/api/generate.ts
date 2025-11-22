@@ -54,19 +54,26 @@ generate.post('/outline', async (c) => {
       .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
 
-    // OpenAI API呼び出し
-    if (!c.env.OPENAI_API_KEY) {
+    // ユーザーのOpenAI APIキーを取得
+    const apiKeyResult = await c.env.DB.prepare(
+      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
+    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+
+    // フォールバック: 環境変数のAPIキー
+    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
       return c.json<APIResponse>({
         success: false,
-        error: 'OpenAI API key not configured'
-      }, 500);
+        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+      }, 400);
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${c.env.OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
@@ -175,19 +182,26 @@ generate.post('/article', async (c) => {
       .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
 
-    // OpenAI API呼び出し
-    if (!c.env.OPENAI_API_KEY) {
+    // ユーザーのOpenAI APIキーを取得
+    const apiKeyResult = await c.env.DB.prepare(
+      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
+    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+
+    // フォールバック: 環境変数のAPIキー
+    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
       return c.json<APIResponse>({
         success: false,
-        error: 'OpenAI API key not configured'
-      }, 500);
+        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+      }, 400);
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${c.env.OPENAI_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',

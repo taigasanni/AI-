@@ -9,6 +9,7 @@ import projects from './routes/api/projects'
 import keywords from './routes/api/keywords'
 import articles from './routes/api/articles'
 import generate from './routes/api/generate'
+import settings from './routes/api/settings'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -28,6 +29,7 @@ app.route('/api/projects', projects)
 app.route('/api/keywords', keywords)
 app.route('/api/articles', articles)
 app.route('/api/generate', generate)
+app.route('/api/settings', settings)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -144,6 +146,10 @@ app.get('/', (c) => {
                         <span>AI記事生成</span>
                     </a>
                     <div class="border-t my-4"></div>
+                    <a href="#" onclick="showSettings()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-cog w-6"></i>
+                        <span>設定</span>
+                    </a>
                     <a href="#" onclick="handleLogout()" class="flex items-center px-4 py-3 text-red-600 rounded-lg hover:bg-red-50">
                         <i class="fas fa-sign-out-alt w-6"></i>
                         <span>ログアウト</span>
