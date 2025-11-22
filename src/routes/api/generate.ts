@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import type { Env, APIResponse } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
 import { getActivePrompt } from '../../lib/db';
+import { generateAIContent } from '../../lib/ai';
 
 const generate = new Hono<{ Bindings: Env }>();
 
@@ -45,55 +46,65 @@ generate.post('/outline', async (c) => {
       .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
 
-    // ユーザーのOpenAI APIキーを取得
-    const apiKeyResult = await c.env.DB.prepare(
-      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
-    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+    // ユーザーのAI APIキーを取得（優先順位: OpenAI, Anthropic）
+    const apiKeys = await c.env.DB.prepare(
+      'SELECT provider, api_key FROM api_settings WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC'
+    ).bind(user.userId).all<{ provider: string; api_key: string }>();
+
+    let provider: 'openai' | 'anthropic' | null = null;
+    let apiKey: string | null = null;
+
+    // 優先順位でAPIキーを選択
+    if (apiKeys.results && apiKeys.results.length > 0) {
+      // OpenAIを優先
+      const openaiKey = apiKeys.results.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        provider = 'openai';
+        apiKey = openaiKey.api_key;
+      } else {
+        // OpenAIがなければAnthropic
+        const anthropicKey = apiKeys.results.find(k => k.provider === 'anthropic');
+        if (anthropicKey) {
+          provider = 'anthropic';
+          apiKey = anthropicKey.api_key;
+        }
+      }
+    }
 
     // フォールバック: 環境変数のAPIキー
-    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
-
     if (!apiKey) {
+      if (c.env.OPENAI_API_KEY) {
+        provider = 'openai';
+        apiKey = c.env.OPENAI_API_KEY;
+      } else if (c.env.ANTHROPIC_API_KEY) {
+        provider = 'anthropic';
+        apiKey = c.env.ANTHROPIC_API_KEY;
+      }
+    }
+
+    if (!apiKey || !provider) {
       return c.json<APIResponse>({
         success: false,
-        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+        error: 'AI API key not configured. Please set your OpenAI or Anthropic API key in Settings.'
       }, 400);
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional content planner specializing in SEO.'
-          },
-          {
-            role: 'user',
-            content: finalPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
+    const generatedText = await generateAIContent({
+      provider,
+      apiKey,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional content planner specializing in SEO.'
+        },
+        {
+          role: 'user',
+          content: finalPrompt
+        }
+      ],
+      temperature: 0.7,
+      maxTokens: 2000
     });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Failed to generate outline'
-      }, 500);
-    }
-
-    const data = await response.json();
-    const generatedText = data.choices[0]?.message?.content || '';
 
     // JSON形式で返却を試みる
     let parsedOutline;
@@ -164,55 +175,65 @@ generate.post('/article', async (c) => {
       .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
 
-    // ユーザーのOpenAI APIキーを取得
-    const apiKeyResult = await c.env.DB.prepare(
-      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
-    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+    // ユーザーのAI APIキーを取得（優先順位: OpenAI, Anthropic）
+    const apiKeys = await c.env.DB.prepare(
+      'SELECT provider, api_key FROM api_settings WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC'
+    ).bind(user.userId).all<{ provider: string; api_key: string }>();
+
+    let provider: 'openai' | 'anthropic' | null = null;
+    let apiKey: string | null = null;
+
+    // 優先順位でAPIキーを選択
+    if (apiKeys.results && apiKeys.results.length > 0) {
+      // OpenAIを優先
+      const openaiKey = apiKeys.results.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        provider = 'openai';
+        apiKey = openaiKey.api_key;
+      } else {
+        // OpenAIがなければAnthropic
+        const anthropicKey = apiKeys.results.find(k => k.provider === 'anthropic');
+        if (anthropicKey) {
+          provider = 'anthropic';
+          apiKey = anthropicKey.api_key;
+        }
+      }
+    }
 
     // フォールバック: 環境変数のAPIキー
-    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
-
     if (!apiKey) {
+      if (c.env.OPENAI_API_KEY) {
+        provider = 'openai';
+        apiKey = c.env.OPENAI_API_KEY;
+      } else if (c.env.ANTHROPIC_API_KEY) {
+        provider = 'anthropic';
+        apiKey = c.env.ANTHROPIC_API_KEY;
+      }
+    }
+
+    if (!apiKey || !provider) {
       return c.json<APIResponse>({
         success: false,
-        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+        error: 'AI API key not configured. Please set your OpenAI or Anthropic API key in Settings.'
       }, 400);
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional web content writer specializing in SEO articles.'
-          },
-          {
-            role: 'user',
-            content: finalPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000
-      })
+    const generatedArticle = await generateAIContent({
+      provider,
+      apiKey,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional web content writer specializing in SEO articles.'
+        },
+        {
+          role: 'user',
+          content: finalPrompt
+        }
+      ],
+      temperature: 0.7,
+      maxTokens: 4000
     });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Failed to generate article'
-      }, 500);
-    }
-
-    const data = await response.json();
-    const generatedArticle = data.choices[0]?.message?.content || '';
 
     return c.json<APIResponse>({
       success: true,
@@ -250,18 +271,46 @@ generate.post('/rewrite', async (c) => {
       }, 400);
     }
 
-    // ユーザーのOpenAI APIキーを取得
-    const apiKeyResult = await c.env.DB.prepare(
-      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
-    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+    // ユーザーのAI APIキーを取得（優先順位: OpenAI, Anthropic）
+    const apiKeys = await c.env.DB.prepare(
+      'SELECT provider, api_key FROM api_settings WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC'
+    ).bind(user.userId).all<{ provider: string; api_key: string }>();
+
+    let provider: 'openai' | 'anthropic' | null = null;
+    let apiKey: string | null = null;
+
+    // 優先順位でAPIキーを選択
+    if (apiKeys.results && apiKeys.results.length > 0) {
+      // OpenAIを優先
+      const openaiKey = apiKeys.results.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        provider = 'openai';
+        apiKey = openaiKey.api_key;
+      } else {
+        // OpenAIがなければAnthropic
+        const anthropicKey = apiKeys.results.find(k => k.provider === 'anthropic');
+        if (anthropicKey) {
+          provider = 'anthropic';
+          apiKey = anthropicKey.api_key;
+        }
+      }
+    }
 
     // フォールバック: 環境変数のAPIキー
-    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
-
     if (!apiKey) {
+      if (c.env.OPENAI_API_KEY) {
+        provider = 'openai';
+        apiKey = c.env.OPENAI_API_KEY;
+      } else if (c.env.ANTHROPIC_API_KEY) {
+        provider = 'anthropic';
+        apiKey = c.env.ANTHROPIC_API_KEY;
+      }
+    }
+
+    if (!apiKey || !provider) {
       return c.json<APIResponse>({
         success: false,
-        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+        error: 'AI API key not configured. Please set your OpenAI or Anthropic API key in Settings.'
       }, 400);
     }
 
@@ -285,40 +334,22 @@ ${original_content}
 
 リライト後の記事:`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional web content editor and SEO specialist.'
-          },
-          {
-            role: 'user',
-            content: rewritePrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000
-      })
+    const rewrittenArticle = await generateAIContent({
+      provider,
+      apiKey,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional web content editor and SEO specialist.'
+        },
+        {
+          role: 'user',
+          content: rewritePrompt
+        }
+      ],
+      temperature: 0.7,
+      maxTokens: 4000
     });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Failed to rewrite article'
-      }, 500);
-    }
-
-    const data = await response.json();
-    const rewrittenArticle = data.choices[0]?.message?.content || '';
 
     return c.json<APIResponse>({
       success: true,

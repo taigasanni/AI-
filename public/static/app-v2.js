@@ -794,24 +794,55 @@ async function showSettings() {
       <!-- API設定 -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-key mr-2"></i>OpenAI API設定
+          <i class="fas fa-robot mr-2"></i>AI API設定
         </h2>
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2">
-            OpenAI APIキー
-            <span class="text-red-500">*</span>
-          </label>
-          <input type="password" id="openai-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-...">
-          <p class="text-sm text-gray-600 mt-2">
-            <i class="fas fa-info-circle"></i>
-            記事生成にはOpenAI APIキーが必要です。
-            <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
-          </p>
+        <p class="text-sm text-gray-600 mb-4">
+          記事生成にはOpenAIまたはAnthropic (Claude) のAPIキーが必要です。どちらか一方、または両方を設定できます。
+        </p>
+        
+        <!-- OpenAI -->
+        <div class="mb-6 p-4 border rounded-lg">
+          <h3 class="font-bold text-gray-800 mb-2 flex items-center">
+            <i class="fas fa-brain text-green-600 mr-2"></i>
+            OpenAI (GPT-4o-mini)
+          </h3>
+          <div class="mb-3">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              OpenAI APIキー
+            </label>
+            <input type="password" id="openai-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-...">
+            <p class="text-sm text-gray-600 mt-2">
+              <i class="fas fa-info-circle"></i>
+              <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
+            </p>
+          </div>
+          <button onclick="saveApiKey('openai')" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+            <i class="fas fa-save mr-2"></i>OpenAI APIキーを保存
+          </button>
+          <div id="openai-status" class="mt-3"></div>
         </div>
-        <button onclick="saveApiKey()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-          <i class="fas fa-save mr-2"></i>保存
-        </button>
-        <div id="api-key-status" class="mt-4"></div>
+
+        <!-- Anthropic -->
+        <div class="mb-4 p-4 border rounded-lg">
+          <h3 class="font-bold text-gray-800 mb-2 flex items-center">
+            <i class="fas fa-robot text-purple-600 mr-2"></i>
+            Anthropic (Claude 3.5 Sonnet)
+          </h3>
+          <div class="mb-3">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              Anthropic APIキー
+            </label>
+            <input type="password" id="anthropic-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-ant-...">
+            <p class="text-sm text-gray-600 mt-2">
+              <i class="fas fa-info-circle"></i>
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
+            </p>
+          </div>
+          <button onclick="saveApiKey('anthropic')" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-save mr-2"></i>Anthropic APIキーを保存
+          </button>
+          <div id="anthropic-status" class="mt-3"></div>
+        </div>
       </div>
 
       <!-- ユーザー情報 -->
@@ -844,11 +875,22 @@ async function loadCurrentApiKey() {
     
     if (data.success && data.data.length > 0) {
       const openaiKey = data.data.find(k => k.provider === 'openai');
+      const anthropicKey = data.data.find(k => k.provider === 'anthropic');
+      
       if (openaiKey) {
-        document.getElementById('api-key-status').innerHTML = `
+        document.getElementById('openai-status').innerHTML = `
           <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
             <i class="fas fa-check-circle mr-2"></i>
             OpenAI APIキーが設定されています
+          </div>
+        `;
+      }
+      
+      if (anthropicKey) {
+        document.getElementById('anthropic-status').innerHTML = `
+          <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+            <i class="fas fa-check-circle mr-2"></i>
+            Anthropic APIキーが設定されています
           </div>
         `;
       }
@@ -858,9 +900,11 @@ async function loadCurrentApiKey() {
   }
 }
 
-async function saveApiKey() {
-  const apiKey = document.getElementById('openai-api-key').value.trim();
-  const statusEl = document.getElementById('api-key-status');
+async function saveApiKey(provider) {
+  const inputId = provider === 'openai' ? 'openai-api-key' : 'anthropic-api-key';
+  const statusId = provider === 'openai' ? 'openai-status' : 'anthropic-status';
+  const apiKey = document.getElementById(inputId).value.trim();
+  const statusEl = document.getElementById(statusId);
 
   if (!apiKey) {
     statusEl.innerHTML = `
@@ -872,11 +916,22 @@ async function saveApiKey() {
     return;
   }
 
-  if (!apiKey.startsWith('sk-')) {
+  // バリデーション
+  if (provider === 'openai' && !apiKey.startsWith('sk-')) {
     statusEl.innerHTML = `
       <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
         <i class="fas fa-exclamation-triangle mr-2"></i>
-        APIキーは 'sk-' で始まる必要があります
+        OpenAI APIキーは 'sk-' で始まる必要があります
+      </div>
+    `;
+    return;
+  }
+
+  if (provider === 'anthropic' && !apiKey.startsWith('sk-ant-')) {
+    statusEl.innerHTML = `
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        Anthropic APIキーは 'sk-ant-' で始まる必要があります
       </div>
     `;
     return;
@@ -890,7 +945,7 @@ async function saveApiKey() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        provider: 'openai',
+        provider: provider,
         api_key: apiKey
       })
     });
@@ -898,14 +953,15 @@ async function saveApiKey() {
     const data = await response.json();
     
     if (data.success) {
+      const providerName = provider === 'openai' ? 'OpenAI' : 'Anthropic';
       statusEl.innerHTML = `
         <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
           <i class="fas fa-check-circle mr-2"></i>
-          APIキーを保存しました
+          ${providerName} APIキーを保存しました
         </div>
       `;
       // 入力欄をクリア
-      document.getElementById('openai-api-key').value = '';
+      document.getElementById(inputId).value = '';
     } else {
       statusEl.innerHTML = `
         <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
