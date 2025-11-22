@@ -38,14 +38,9 @@ publicRoutes.get('/', async (c) => {
     <body class="bg-gray-50">
         <header class="bg-white shadow">
             <div class="max-w-6xl mx-auto px-4 py-6">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-3xl font-bold text-gray-800">
-                        <i class="fas fa-blog mr-2 text-blue-600"></i>ブログ
-                    </h1>
-                    <a href="/admin" class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-user-shield mr-1"></i>管理画面
-                    </a>
-                </div>
+                <h1 class="text-3xl font-bold text-gray-800">
+                    <i class="fas fa-blog mr-2 text-blue-600"></i>ブログ
+                </h1>
             </div>
         </header>
         

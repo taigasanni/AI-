@@ -1271,27 +1271,8 @@ async function showBlogList() {
 // ===================================
 // 内部リンク管理画面
 // ===================================
-function showInternalLinks() {
-  updateSidebarActive('links');
-  
-  const contentArea = document.getElementById('content-area');
-  contentArea.innerHTML = `
-    <div class="max-w-6xl mx-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">
-          <i class="fas fa-link mr-2"></i>内部リンク管理
-        </h1>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="text-center py-12">
-          <i class="fas fa-tools text-6xl text-gray-400 mb-4"></i>
-          <p class="text-xl text-gray-600 mb-2">この機能は開発中です</p>
-          <p class="text-gray-500">記事間の内部リンクを自動管理する機能を実装予定です</p>
-        </div>
-      </div>
-    </div>
-  `;
-}
+// 注意: showInternalLinks関数は削除しました
+// 内部リンク管理は別ファイル (internal-links.js) で実装されています
 
 // ===================================
 // 設定画面

@@ -9,7 +9,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "ai-blog-cms-db",
+      "database_name": "webapp-production",
       "database_id": "local-only"
     }
   ]

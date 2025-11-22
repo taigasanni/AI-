@@ -14,6 +14,8 @@ import reference from './routes/api/reference'
 import models from './routes/api/models'
 import decoration from './routes/api/decoration'
 import blog from './routes/api/blog'
+import publicArticlesApi from './routes/api/public-articles'
+import internalLinksApi from './routes/api/internal-links'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -44,6 +46,8 @@ app.route('/api/reference', reference)
 app.route('/api/models', models)
 app.route('/api/decoration-template', decoration)
 app.route('/api/blog', blog)
+app.route('/api/public/articles', publicArticlesApi)
+app.route('/api/internal-links', internalLinksApi)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -68,6 +72,8 @@ app.get('/admin', (c) => {
         <!-- Quill.js リッチテキストエディター -->
         <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
         <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+        <!-- D3.js マインドマップ用 -->
+        <script src="https://d3js.org/d3.v7.min.js"></script>
         <!-- Markdown Preview Styles -->
         <link href="/static/markdown-preview.css" rel="stylesheet">
         <style>
@@ -173,7 +179,7 @@ app.get('/admin', (c) => {
                         <i class="fas fa-globe w-6"></i>
                         <span>ブログ</span>
                     </a>
-                    <a href="#" onclick="showInternalLinks()" data-page="links" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                    <a href="#" onclick="event.preventDefault(); showInternalLinks(); return false;" data-page="links" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-link w-6"></i>
                         <span>内部リンク管理</span>
                     </a>
@@ -201,6 +207,7 @@ app.get('/admin', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app-v2.js"></script>
+        <script src="/static/internal-links.js"></script>
     </body>
     </html>
   `)
