@@ -130,7 +130,7 @@ generate.post('/outline', async (c) => {
     console.error('Generate outline error:', error);
     return c.json<APIResponse>({
       success: false,
-      error: 'Failed to generate outline'
+      error: error.message || 'Failed to generate outline'
     }, 500);
   }
 });
@@ -251,7 +251,7 @@ generate.post('/article', async (c) => {
     console.error('Generate article error:', error);
     return c.json<APIResponse>({
       success: false,
-      error: 'Failed to generate article'
+      error: error.message || 'Failed to generate article'
     }, 500);
   }
 });
@@ -362,7 +362,7 @@ ${original_content}
     console.error('Rewrite error:', error);
     return c.json<APIResponse>({
       success: false,
-      error: 'Failed to rewrite article'
+      error: error.message || 'Failed to rewrite article'
     }, 500);
   }
 });

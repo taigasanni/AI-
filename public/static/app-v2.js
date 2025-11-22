@@ -460,13 +460,14 @@ async function generateOutline() {
       contentFlow.step = 'outline';
       renderCurrentStep();
     } else {
-      alert(data.error || '構成生成に失敗しました');
+      const errorMsg = data.error || '構成生成に失敗しました';
+      alert(`エラー: ${errorMsg}\n\n設定画面でAI APIキー（OpenAIまたはAnthropic）を確認してください。`);
       contentFlow.step = 'keyword';
       renderCurrentStep();
     }
   } catch (error) {
     console.error('Generate outline error:', error);
-    alert('構成生成に失敗しました');
+    alert(`ネットワークエラー: ${error.message}\n\n接続がタイムアウトしました。もう一度お試しください。`);
     contentFlow.step = 'keyword';
     renderCurrentStep();
   }
@@ -511,13 +512,14 @@ async function generateArticle() {
       contentFlow.step = 'article';
       renderCurrentStep();
     } else {
-      alert(data.error || '記事生成に失敗しました');
+      const errorMsg = data.error || '記事生成に失敗しました';
+      alert(`エラー: ${errorMsg}\n\n設定画面でAI APIキー（OpenAIまたはAnthropic）を確認してください。`);
       contentFlow.step = 'outline';
       renderCurrentStep();
     }
   } catch (error) {
     console.error('Generate article error:', error);
-    alert('記事生成に失敗しました');
+    alert(`ネットワークエラー: ${error.message}\n\n接続がタイムアウトしました。もう一度お試しください。`);
     contentFlow.step = 'outline';
     renderCurrentStep();
   }
