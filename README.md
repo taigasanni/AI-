@@ -1,144 +1,157 @@
-# AI自動ブログ投稿CMS
+# AI Blog CMS v2.1 - シンプル統合版
 
-## プロジェクト概要
+## 📋 プロジェクト概要
 
-**AI自動ブログ投稿CMS**は、コンテンツ制作の流れ(キーワード選定 → 構成 → 執筆 → 装飾 → 内部リンク → 画像挿入 → 投稿)を、AIと独自CMSで半自動化するシステムです。
+**AI Blog CMS**は、AIを活用したブログコンテンツ制作を効率化するシステムです。OpenAIまたはAnthropic (Claude) のAPIを使用して、キーワードから記事執筆までの流れを統合的にサポートします。
 
-### 主な機能
+### ✨ 主な特徴
 
-- ✅ **JWT認証システム** - セキュアなユーザー認証
-- ✅ **プロジェクト管理** - 複数サイト・メディアの一元管理
-- ✅ **キーワード管理** - SEOキーワードの登録・管理
-- ✅ **プロンプト管理** - AI生成用プロンプトのバージョン管理
-- ✅ **記事管理** - ドラフト・レビュー・予約・公開のステータス管理
-- ✅ **AI記事生成** - OpenAI GPT-4を使った構成・本文生成
-- ⏳ **画像管理** - 画像データベースと自動挿入 (開発予定)
-- ⏳ **装飾ルール** - 文字装飾の自動適用 (開発予定)
-- ⏳ **内部リンク生成** - 関連記事の自動リンク挿入 (開発予定)
+- **シンプル設計** - プロジェクト管理を廃止し、ユーザー単位で直接管理
+- **統合フロー** - キーワード → アウトライン → 記事執筆 → リライトを1画面で完結
+- **マルチAI対応** - OpenAI (GPT-4o-mini) と Anthropic (Claude 3.5 Sonnet) をサポート
+- **柔軟なAPI設定** - ユーザーごとに自分のAPIキーを設定可能
 
-## 公開URL
+## 🚀 公開URL
 
 ### 開発環境
 - **メイン画面**: https://3000-ieespo9mst740vnh5irb2-5c13a017.sandbox.novita.ai
 - **API Health Check**: https://3000-ieespo9mst740vnh5irb2-5c13a017.sandbox.novita.ai/api/health
 
-## 技術スタック
+## 💻 技術スタック
 
 - **Backend**: Hono (Cloudflare Workers)
 - **Database**: Cloudflare D1 (SQLite)
-- **Frontend**: Vanilla JavaScript + TailwindCSS
-- **AI**: OpenAI GPT-4o-mini
+- **Frontend**: Vanilla JavaScript + TailwindCSS + Font Awesome
+- **AI**: OpenAI GPT-4o-mini / Anthropic Claude 3.5 Sonnet
 - **Authentication**: JWT (Web Crypto API)
 - **Deployment**: Cloudflare Pages
+- **Process Manager**: PM2 (開発環境)
 
-## データアーキテクチャ
+## 📊 データアーキテクチャ
 
-### 主要テーブル
+### 主要テーブル (v2.1)
 
 1. **users** - ユーザー情報 (email, password_hash, role)
-2. **projects** - プロジェクト (name, domain, publish_method)
-3. **prompts** - プロンプト定義 (type, version, body, params)
-4. **keywords** - キーワード (keyword, search_intent, notes)
-5. **articles** - 記事 (title, content, status, meta_description)
-6. **article_keywords** - 記事とキーワードの紐づけ
-7. **images** - 画像マスタ (url, alt_text, categories, tags)
-8. **decoration_rules** - 装飾ルール (rule_type, target_texts, wrapper)
+2. **keywords** - キーワード (user_id, keyword, search_intent)
+3. **articles** - 記事 (user_id, title, content, status)
+4. **prompts** - プロンプト定義 (user_id, type, body, params)
+5. **api_settings** - AIプロバイダーAPIキー (user_id, provider, api_key)
+6. **images** - 画像マスタ (url, alt_text)
+7. **decoration_rules** - 装飾ルール (rule_type, target_texts)
 
-## APIエンドポイント
+**v2.0からの変更点**: `project_id`を削除し、全て`user_id`ベースに簡素化
 
-### 認証 (/api/auth)
-- `POST /api/auth/register` - ユーザー登録
-- `POST /api/auth/login` - ログイン
-- `GET /api/auth/me` - 現在のユーザー情報取得
-- `POST /api/auth/logout` - ログアウト
+## 🎯 主要機能
 
-### プロジェクト (/api/projects)
-- `GET /api/projects` - プロジェクト一覧
-- `GET /api/projects/:id` - プロジェクト詳細
-- `POST /api/projects` - プロジェクト作成
-- `PUT /api/projects/:id` - プロジェクト更新
-- `DELETE /api/projects/:id` - プロジェクト削除
+### ✅ 実装済み機能
 
-### キーワード (/api/keywords)
-- `GET /api/keywords?projectId=X` - キーワード一覧
-- `POST /api/keywords` - キーワード作成
-- `DELETE /api/keywords/:id` - キーワード削除
+#### 1. 認証システム
+- ユーザー登録（自動デフォルトプロンプト作成）
+- ログイン/ログアウト
+- JWT認証
 
-### 記事 (/api/articles)
-- `GET /api/articles?projectId=X` - 記事一覧
-- `GET /api/articles/:id` - 記事詳細
-- `POST /api/articles` - 記事作成
-- `PUT /api/articles/:id` - 記事更新
-- `DELETE /api/articles/:id` - 記事削除
+#### 2. コンテンツ作成（統合フロー）
+- **ステップ1**: キーワード入力 + パラメータ設定
+- **ステップ2**: AIアウトライン生成
+- **ステップ3**: AI記事執筆
+- **ステップ4**: AIリライト（オプション）
+- **進捗バー**: 現在のステップを視覚的に表示
+- **戻る機能**: 各ステップに戻って修正可能
 
-### AI生成 (/api/generate)
-- `POST /api/generate/outline` - 記事構成生成
-- `POST /api/generate/article` - 記事本文生成
+#### 3. AI統合
+- **マルチプロバイダー対応**:
+  - OpenAI (GPT-4o-mini)
+  - Anthropic (Claude 3.5 Sonnet)
+- **自動フォールバック**: OpenAI → Anthropic → 環境変数
+- **統一インターフェース**: プロバイダーを意識せず利用可能
 
-## 使い方
+#### 4. 記事管理
+- 記事一覧表示
+- ステータス別表示（下書き/レビュー中/公開済み）
+- 記事削除
 
-### 1. ユーザー登録・ログイン
+#### 5. 設定画面
+- **OpenAI APIキー設定**
+  - キー形式: `sk-...`
+  - リンク: [OpenAI API Keys](https://platform.openai.com/api-keys)
+- **Anthropic APIキー設定**
+  - キー形式: `sk-ant-...`
+  - リンク: [Anthropic Console](https://console.anthropic.com/settings/keys)
+- ユーザー情報表示
 
-1. メイン画面にアクセス
-2. 「新規登録」をクリック
-3. 名前・メールアドレス・パスワードを入力して登録
-4. ログイン後、ダッシュボードが表示されます
+#### 6. 内部リンク管理（プレースホルダー）
+- 将来実装予定の機能
 
-### 2. プロジェクト作成
+### ⏳ 開発予定機能
 
-1. サイドバーから「プロジェクト」を選択
-2. 「新規作成」ボタンをクリック
-3. モーダルで以下を入力:
-   - プロジェクト名 (必須)
-   - 説明
-   - ドメイン
-   - 公開方法 (内部CMS / WordPress / 手動コピー)
-4. 「作成」ボタンをクリック
+- 記事編集機能
+- 画像管理と自動挿入
+- 内部リンク自動生成
+- WordPress REST API連携
+- スケジュール自動投稿
 
-### 3. キーワード登録
+## 📖 使い方
 
-1. サイドバーから「キーワード」を選択
-2. 「キーワード追加」ボタンをクリック
-3. モーダルで以下を入力:
-   - キーワード (必須)
-   - 検索意図
-   - メモ
-4. 「追加」ボタンをクリック
+### 1. ログイン
 
-### 4. AI記事生成
+デフォルト管理者アカウント:
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
 
-1. サイドバーから「AI記事生成」を選択
-2. **構成生成**:
-   - キーワードを入力
-   - 文字数目安とトーンを設定
-   - 「構成を生成」ボタンをクリック
-3. **本文生成**:
-   - 生成された構成をコピー
-   - 「本文を生成」ボタンをクリック
-   - 生成された記事を「記事として保存」
+または、新規登録から自分のアカウントを作成できます。
 
-### 5. 記事作成
+### 2. AI APIキーの設定（必須）
 
-1. サイドバーから「記事管理」を選択
-2. 「記事作成」ボタンをクリック
-3. モーダルで以下を入力:
-   - タイトル (必須)
-   - スラッグ (URL用、任意)
-   - 本文 (Markdown形式)
-   - メタディスクリプション
-   - ステータス (下書き / レビュー中 / 予約投稿 / 公開済み)
-4. 「作成」ボタンをクリック
+サイドバーから「**設定**」をクリック
 
-### 6. 記事管理
+#### オプションA: OpenAI APIキー
+1. [OpenAI API Keys](https://platform.openai.com/api-keys) にアクセス
+2. 新しいAPIキーを作成（`sk-...`）
+3. 設定画面の「OpenAI APIキー」欄に貼り付け
+4. 「OpenAI APIキーを保存」をクリック
 
-1. サイドバーから「記事管理」を選択
-2. 記事一覧から:
-   - **目のアイコン**: 記事詳細表示
-   - **ゴミ箱アイコン**: 記事削除
-3. 記事詳細モーダルで内容を確認
-4. ステータス別にカラー表示
+#### オプションB: Anthropic (Claude) APIキー
+1. [Anthropic Console](https://console.anthropic.com/settings/keys) にアクセス
+2. 新しいAPIキーを作成（`sk-ant-...`）
+3. 設定画面の「Anthropic APIキー」欄に貼り付け
+4. 「Anthropic APIキーを保存」をクリック
 
-## ローカル開発
+**注意**: どちらか一方でOKです。両方設定した場合、OpenAIが優先的に使用されます。
+
+### 3. コンテンツ作成
+
+1. サイドバーから「**コンテンツ作成**」をクリック
+
+2. **キーワード入力**:
+   - キーワード: 例「AIブログ作成ツール」
+   - 文字数目安: 3000文字（調整可能）
+   - トーン: professional（調整可能）
+   - 「アウトライン生成」をクリック
+
+3. **アウトライン確認**:
+   - 生成されたJSON形式のアウトラインを確認
+   - 必要に応じて手動編集
+   - 「記事執筆」をクリック
+
+4. **記事編集**:
+   - 生成された記事を確認
+   - テキストエリアで自由に編集
+   - 文字数カウント表示
+   - 「リライト」で再生成（オプション）
+   - 「記事を保存」で完成
+
+5. **保存**:
+   - タイトル入力
+   - ステータス選択（下書き/レビュー中/公開済み）
+   - 「保存」をクリック
+
+### 4. 記事管理
+
+1. サイドバーから「**記事一覧**」をクリック
+2. 保存した記事の一覧が表示されます
+3. ゴミ箱アイコンで記事を削除できます
+
+## 🛠️ ローカル開発
 
 ### 環境変数設定
 
@@ -146,7 +159,10 @@
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 JWT_SECRET=your_jwt_secret_key_here
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=admin123
 ```
 
 ### データベースマイグレーション
@@ -155,13 +171,16 @@ JWT_SECRET=your_jwt_secret_key_here
 # ローカルD1データベースにマイグレーション適用
 npm run db:migrate:local
 
-# データベース確認
+# データベースコンソール（ローカル）
 npm run db:console:local
 ```
 
 ### サーバー起動
 
 ```bash
+# 依存関係インストール
+npm install
+
 # ビルド
 npm run build
 
@@ -169,106 +188,85 @@ npm run build
 pm2 start ecosystem.config.cjs
 
 # ログ確認
-pm2 logs --nostream
+pm2 logs ai-blog-cms --nostream
+
+# サーバー再起動
+pm2 restart ai-blog-cms
 
 # サーバー停止
 pm2 delete ai-blog-cms
 ```
 
-### ポートクリーンアップ
+### 便利なnpmスクリプト
 
 ```bash
+# ポートクリーンアップ
 npm run clean-port
+
+# ヘルスチェック
+npm run test
+
+# データベースリセット（ローカル）
+npm run db:reset
 ```
 
-## デプロイ
+## 🚢 デプロイ
 
 ### Cloudflare Pagesへのデプロイ
 
+1. **Cloudflare APIキーの設定**:
 ```bash
-# ビルド
-npm run build
-
-# デプロイ
-npm run deploy
+# setup_cloudflare_api_key ツールを使用
+# または Deploy タブで設定
 ```
 
-### 環境変数設定 (本番環境)
-
+2. **プロジェクト作成**:
 ```bash
-# OpenAI APIキー設定
+npx wrangler pages project create ai-blog-cms \
+  --production-branch main \
+  --compatibility-date 2024-01-01
+```
+
+3. **デプロイ**:
+```bash
+npm run build
+npm run deploy
+# または
+npm run deploy:prod
+```
+
+4. **環境変数設定（本番環境）**:
+```bash
+# OpenAI APIキー
 npx wrangler pages secret put OPENAI_API_KEY --project-name ai-blog-cms
 
-# JWT秘密鍵設定
+# Anthropic APIキー
+npx wrangler pages secret put ANTHROPIC_API_KEY --project-name ai-blog-cms
+
+# JWT秘密鍵
 npx wrangler pages secret put JWT_SECRET --project-name ai-blog-cms
+
+# 管理者認証情報
+npx wrangler pages secret put ADMIN_EMAIL --project-name ai-blog-cms
+npx wrangler pages secret put ADMIN_PASSWORD --project-name ai-blog-cms
 ```
 
-## 新機能: モーダルUI (v1.0)
+5. **D1データベースマイグレーション（本番）**:
+```bash
+npm run db:migrate:prod
+```
 
-### ✨ 実装済みのモーダル機能
+## 🔧 トラブルシューティング
 
-#### 1. プロジェクト作成モーダル
-- プロジェクト名、説明、ドメイン、公開方法を入力
-- リアルタイムバリデーション
-- 作成後、自動的にプロジェクト一覧に反映
+### タイムアウトエラー
 
-#### 2. キーワード追加モーダル
-- キーワード、検索意図、メモを入力
-- プロジェクト選択状態で利用可能
-- 追加後、自動的にキーワード一覧に反映
+**問題**: "応答時間が長すぎます" エラー
 
-#### 3. 記事作成モーダル
-- タイトル、スラッグ、本文(Markdown)、メタディスクリプション、ステータスを入力
-- 大きめのモーダルで快適な入力体験
-- 作成後、自動的に記事一覧に反映
-
-#### 4. 記事詳細モーダル
-- 記事の全情報を表示
-- Markdown本文のプレビュー
-- ステータスに応じたカラー表示
-- 編集ボタン (将来実装予定)
-
-### 💡 モーダルの使い方
-
-- **開く**: 各画面の「新規作成」「追加」ボタンをクリック
-- **閉じる**: 
-  - 右上の「×」ボタン
-  - 背景の暗い部分をクリック
-  - 「キャンセル」ボタン
-- **送信**: 必須項目を入力して「作成」「追加」ボタン
-
-## 開発ステータス
-
-### ✅ 完了 (v1.0)
-
-- ✅ JWT認証システム (登録/ログイン/ログアウト)
-- ✅ プロジェクト管理 (CRUD + モーダルUI)
-- ✅ キーワード管理 (CRUD + モーダルUI)
-- ✅ プロンプト管理 (CRUD、バージョン管理)
-- ✅ 記事管理 (CRUD + モーダルUI + 詳細表示)
-- ✅ AI記事生成 (構成生成/本文生成)
-- ✅ フロントエンド管理画面 (認証/ダッシュボード/各管理画面)
-- ✅ モーダルベースのUI (プロジェクト/キーワード/記事作成)
-- ✅ フォーム検証とエラーハンドリング
-
-### ⏳ 今後の開発予定
-
-- 記事編集機能 (モーダルUI)
-- 画像管理API (CRUD)
-- 装飾ルール管理API (CRUD、適用処理)
-- Markdownプレビュー機能
-- 内部リンク生成機能 (簡易版)
-
-### 📋 今後の拡張予定
-
-- WordPress REST API連携
-- スケジュール自動投稿
-- リビジョン管理と復元
-- サーチコンソール連携
-- 画像の自動マッピング
-- 複数ユーザーでのコラボレーション機能
-
-## トラブルシューティング
+**原因と対策**:
+1. **APIキーが未設定** → 設定画面でAPIキーを設定
+2. **APIキーが無効** → OpenAI/Anthropicコンソールで確認
+3. **クォータ超過** → アカウント残高を確認
+4. **ネットワーク遅延** → 再試行してください
 
 ### ポート3000が使用中
 
@@ -281,8 +279,7 @@ fuser -k 3000/tcp
 ### データベースリセット
 
 ```bash
-rm -rf .wrangler/state/v3/d1
-npm run db:migrate:local
+npm run db:reset
 ```
 
 ### PM2でサーバーが起動しない
@@ -291,16 +288,71 @@ npm run db:migrate:local
 pm2 delete all
 npm run build
 pm2 start ecosystem.config.cjs
+pm2 logs --nostream
 ```
 
-## ライセンス
+### "Project ID and keyword are required" エラー
+
+このエラーはv2.1で修正されました。最新版を使用してください。
+
+## 📚 APIエンドポイント
+
+### 認証 (/api/auth)
+- `POST /api/auth/register` - ユーザー登録
+- `POST /api/auth/login` - ログイン
+- `GET /api/auth/me` - 現在のユーザー情報
+- `POST /api/auth/logout` - ログアウト
+
+### キーワード (/api/keywords)
+- `GET /api/keywords` - キーワード一覧
+- `POST /api/keywords` - キーワード作成
+- `DELETE /api/keywords/:id` - キーワード削除
+
+### 記事 (/api/articles)
+- `GET /api/articles` - 記事一覧
+- `GET /api/articles/:id` - 記事詳細
+- `POST /api/articles` - 記事作成
+- `PUT /api/articles/:id` - 記事更新
+- `DELETE /api/articles/:id` - 記事削除
+
+### AI生成 (/api/generate)
+- `POST /api/generate/outline` - 記事構成生成
+- `POST /api/generate/article` - 記事本文生成
+- `POST /api/generate/rewrite` - 記事リライト
+
+### 設定 (/api/settings)
+- `GET /api/settings/api-keys` - APIキー一覧
+- `POST /api/settings/api-keys` - APIキー保存
+
+## 📝 更新履歴
+
+### v2.1 (2025-11-22)
+- ✅ マルチAIプロバイダー対応（OpenAI + Anthropic）
+- ✅ 統一AIインターフェース実装
+- ✅ エラーハンドリング強化
+- ✅ 設定画面改善（両AIサポート）
+
+### v2.0 (2025-11-22)
+- ✅ プロジェクト概念を削除、シンプル化
+- ✅ 統合コンテンツ作成フロー実装
+- ✅ ユーザー単位の管理に変更
+- ✅ デフォルトプロンプト自動作成
+- ✅ 設定画面・記事一覧・内部リンク管理追加
+
+### v1.0
+- ✅ 初版リリース
+- ✅ JWT認証システム
+- ✅ プロジェクト管理（削除予定）
+- ✅ AI記事生成基本機能
+
+## 📄 ライセンス
 
 MIT License
 
-## 作成者
+## 👤 作成者
 
 武宮太雅
 
-## 最終更新日
+## 📅 最終更新日
 
 2025-11-22
