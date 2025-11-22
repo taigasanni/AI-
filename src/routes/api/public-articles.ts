@@ -81,15 +81,15 @@ publicArticlesApi.get('/:id', async (c) => {
       }, 404);
     }
 
-    // 内部リンクを取得
+    // 内部リンクを取得（この記事がリンク先となっているもの）
     const internalLinks = await c.env.DB.prepare(
       `SELECT 
         il.*,
-        ta.slug as to_article_slug,
-        ta.title as to_article_title
+        fa.slug as from_article_slug,
+        fa.title as from_article_title
        FROM internal_links il
-       JOIN articles ta ON il.to_article_id = ta.id
-       WHERE il.from_article_id = ? AND il.is_active = 1
+       JOIN articles fa ON il.from_article_id = fa.id
+       WHERE il.to_article_id = ? AND il.is_active = 1
        ORDER BY il.position ASC`
     ).bind(article.id).all();
 
@@ -124,6 +124,8 @@ publicArticlesApi.get('/:id', async (c) => {
 
 /**
  * Markdown本文に内部リンクを挿入する関数
+ * この記事がリンク先（to_article）となっているリンクを、
+ * 指定された見出し（to_heading）の下に挿入する
  */
 function insertInternalLinks(content: string, links: any[]): string {
   const lines = content.split('\n');
@@ -139,20 +141,25 @@ function insertInternalLinks(content: string, links: any[]): string {
     if (headingMatch) {
       const headingText = headingMatch[2].trim();
       
-      // この見出しに対応する内部リンクを検索
+      // この見出し（to_heading）に対応する内部リンクを検索
       const matchingLinks = links.filter(link => {
-        return link.from_heading === headingText;
+        // to_headingが指定されている場合はそれに一致するもの
+        if (link.to_heading) {
+          return link.to_heading === headingText;
+        }
+        // to_headingが指定されていない場合は最初の見出しに表示
+        return false;
       });
       
       if (matchingLinks.length > 0) {
         // 見出しの直後に空行を追加
         processedLines.push('');
         
-        // 内部リンクを挿入
+        // 内部リンクを挿入（リンク元の記事へのリンク）
         matchingLinks.forEach(link => {
-          const linkUrl = link.to_heading_id 
-            ? `/blog/${link.to_article_slug}#${link.to_heading_id}`
-            : `/blog/${link.to_article_slug}`;
+          const linkUrl = link.from_heading_id 
+            ? `/blog/${link.from_article_slug}#${link.from_heading_id}`
+            : `/blog/${link.from_article_slug}`;
           
           const linkMarkdown = `[${link.link_text}](${linkUrl})`;
           processedLines.push(`> 🔗 **関連記事:** ${linkMarkdown}`);
@@ -162,6 +169,22 @@ function insertInternalLinks(content: string, links: any[]): string {
         processedLines.push('');
       }
     }
+  }
+  
+  // to_headingが指定されていないリンク（記事全体へのリンク）を先頭に追加
+  const articleLevelLinks = links.filter(link => !link.to_heading);
+  if (articleLevelLinks.length > 0) {
+    const linkLines: string[] = [''];
+    articleLevelLinks.forEach(link => {
+      const linkUrl = link.from_heading_id 
+        ? `/blog/${link.from_article_slug}#${link.from_heading_id}`
+        : `/blog/${link.from_article_slug}`;
+      
+      const linkMarkdown = `[${link.link_text}](${linkUrl})`;
+      linkLines.push(`> 🔗 **関連記事:** ${linkMarkdown}`);
+    });
+    linkLines.push('');
+    processedLines.unshift(...linkLines);
   }
   
   return processedLines.join('\n');

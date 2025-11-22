@@ -59,28 +59,28 @@ function showInternalLinks() {
 
       <!-- 2カラムレイアウト -->
       <div class="grid grid-cols-2 gap-6">
-        <!-- 左側: リンク元 -->
+        <!-- 左側: リンク先を選択 -->
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-xl p-6 border-4 border-blue-300">
           <div class="mb-4 pb-4 border-b-4 border-blue-400">
             <h2 class="text-2xl font-bold text-blue-900 flex items-center">
               <i class="fas fa-hand-point-right text-3xl mr-3"></i>
               リンク元（ここからドラッグ）
             </h2>
-            <p class="text-blue-700 mt-2">見出しを右側にドラッグしてリンクを作成</p>
+            <p class="text-blue-700 mt-2">参照元の見出しを右側の配置先にドラッグ</p>
           </div>
           <div id="left-articles" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
             <!-- 左側の記事がここに表示されます -->
           </div>
         </div>
 
-        <!-- 右側: リンク先 -->
+        <!-- 右側: リンク配置先 -->
         <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-xl p-6 border-4 border-green-300">
           <div class="mb-4 pb-4 border-b-4 border-green-400">
             <h2 class="text-2xl font-bold text-green-900 flex items-center">
               <i class="fas fa-bullseye text-3xl mr-3"></i>
-              リンク先（ここにドロップ）
+              リンク配置先（ここにドロップ）
             </h2>
-            <p class="text-green-700 mt-2">左側の見出しをここにドロップ</p>
+            <p class="text-green-700 mt-2">ここにドロップした見出しの下にリンクが表示されます</p>
           </div>
           <div id="right-articles" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
             <!-- 右側の記事がここに表示されます -->
@@ -101,7 +101,7 @@ function showInternalLinks() {
           </div>
           <div class="bg-white p-4 rounded-lg shadow">
             <i class="fas fa-hand-rock text-green-600 mr-2 text-xl"></i>
-            <strong>左側の見出し</strong>をドラッグ → 右側の見出しにドロップ
+            <strong>左側の見出し</strong>をドラッグ → 右側の見出しにドロップすると、右側の見出しの下にリンクが配置されます
           </div>
           <div class="bg-white p-4 rounded-lg shadow">
             <i class="fas fa-times-circle text-red-600 mr-2 text-xl"></i>
@@ -126,20 +126,20 @@ function showInternalLinks() {
         </div>
         <div class="p-8">
           <div class="space-y-6">
-            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-600">
+            <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-600">
               <p class="text-sm font-semibold text-gray-600 mb-2">
-                <i class="fas fa-arrow-right text-blue-600 mr-2"></i>リンク元:
+                <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>リンク配置先（この見出しの下に表示）:
               </p>
-              <p id="modal-from" class="text-lg font-bold text-gray-900"></p>
+              <p id="modal-to" class="text-lg font-bold text-gray-900"></p>
             </div>
             <div class="text-center">
               <i class="fas fa-arrow-down text-5xl text-gradient bg-gradient-to-r from-blue-600 to-green-600"></i>
             </div>
-            <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-600">
+            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-600">
               <p class="text-sm font-semibold text-gray-600 mb-2">
-                <i class="fas fa-bullseye text-green-600 mr-2"></i>リンク先:
+                <i class="fas fa-link text-blue-600 mr-2"></i>リンク元（この記事への参照）:
               </p>
-              <p id="modal-to" class="text-lg font-bold text-gray-900"></p>
+              <p id="modal-from" class="text-lg font-bold text-gray-900"></p>
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -313,11 +313,11 @@ function renderColumn(side) {
           
           headingDiv.appendChild(headingCard);
           
-          // 左側の場合、この見出しから出ているリンクを表示
-          if (isDragSource) {
+          // 右側（配置先）の場合、この見出しに配置されているリンクを表示
+          if (!isDragSource) {
             const headingLinks = links.filter(link => 
-              link.from_article_id === article.id && 
-              link.from_heading === heading.text &&
+              link.to_article_id === article.id && 
+              link.to_heading === heading.text &&
               link.is_active
             );
             
@@ -326,17 +326,17 @@ function renderColumn(side) {
               linksContainer.className = 'ml-8 mt-2 space-y-2';
               
               headingLinks.forEach(link => {
-                const toArticle = articles.find(a => a.id === link.to_article_id);
+                const fromArticle = articles.find(a => a.id === link.from_article_id);
                 const linkDiv = document.createElement('div');
-                linkDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-2 rounded flex items-center justify-between shadow-sm';
+                linkDiv.className = 'bg-green-50 border-l-4 border-green-500 p-2 rounded flex items-center justify-between shadow-sm';
                 
                 linkDiv.innerHTML = `
                   <div class="flex items-center space-x-2 text-sm">
-                    <i class="fas fa-link text-blue-600"></i>
-                    <span class="font-semibold text-blue-900">${link.link_text}</span>
-                    <i class="fas fa-arrow-right text-gray-400"></i>
-                    <span class="text-gray-700">${toArticle ? toArticle.title : '不明'}</span>
-                    ${link.to_heading ? `<span class="text-xs text-gray-500">→ ${link.to_heading}</span>` : ''}
+                    <i class="fas fa-link text-green-600"></i>
+                    <span class="font-semibold text-green-900">${link.link_text}</span>
+                    <i class="fas fa-arrow-left text-gray-400"></i>
+                    <span class="text-gray-700">${fromArticle ? fromArticle.title : '不明'}</span>
+                    ${link.from_heading ? `<span class="text-xs text-gray-500">← ${link.from_heading}</span>` : ''}
                   </div>
                   <button onclick="deleteLink(${link.id})" class="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-100">
                     <i class="fas fa-trash"></i>
@@ -421,14 +421,15 @@ function handleDragEnd(e) {
 // リンク作成モーダル
 // ===================================
 function showLinkModal(source, target) {
-  document.getElementById('modal-from').textContent = 
-    `${source.article.title} > ${source.heading.text}`;
-  
+  // モーダルの表示順序を逆にする
   document.getElementById('modal-to').textContent = 
     `${target.article.title} > ${target.heading.text}`;
   
+  document.getElementById('modal-from').textContent = 
+    `${source.article.title} > ${source.heading.text}`;
+  
   document.getElementById('modal-link-text').value = 
-    `${target.article.title}について詳しく見る`;
+    `${source.article.title}について詳しく見る`;
   
   document.getElementById('link-modal').classList.remove('hidden');
   
@@ -452,6 +453,9 @@ async function confirmCreateLink() {
   }
   
   try {
+    // from と to を逆にする：
+    // source（左側）がリンク元、target（右側）がリンク配置先
+    // データベースには to が配置先、from が参照元として保存
     const response = await fetch('/api/internal-links', {
       method: 'POST',
       headers: {
