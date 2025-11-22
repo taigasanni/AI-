@@ -89,6 +89,8 @@ generate.post('/outline', async (c) => {
       }, 400);
     }
 
+    console.log(`Using AI provider: ${provider}`);
+
     const generatedText = await generateAIContent({
       provider,
       apiKey,

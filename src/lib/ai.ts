@@ -82,6 +82,9 @@ async function generateWithAnthropic(
     content: m.content
   }));
 
+  const selectedModel = model || 'claude-3-5-sonnet-latest';
+  console.log(`Calling Anthropic API with model: ${selectedModel}`);
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -90,7 +93,7 @@ async function generateWithAnthropic(
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: model || 'claude-3-5-sonnet-20240620',
+      model: selectedModel,
       max_tokens: maxTokens,
       temperature: temperature,
       system: systemMessage,
