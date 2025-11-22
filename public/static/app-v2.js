@@ -14,6 +14,7 @@ let contentFlow = {
   seo_title: '',
   meta_description: '',
   target_keywords: '',
+  og_image_url: '',
   max_chars: 3000,
   tone: 'professional',
   step: 'keyword' // keyword, outline, article, rewrite
@@ -649,6 +650,38 @@ function renderCurrentStep() {
             </p>
           </div>
           
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              アイキャッチ画像 <span class="text-gray-500 text-xs">(OG画像/SNSシェア用)</span>
+            </label>
+            <div class="flex items-center gap-4">
+              <div id="og-image-preview" class="flex-shrink-0">
+                ${contentFlow.og_image_url ? `
+                  <img src="${contentFlow.og_image_url}" alt="アイキャッチ画像" 
+                       class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300">
+                ` : `
+                  <div class="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                    <i class="fas fa-image text-gray-400 text-3xl"></i>
+                  </div>
+                `}
+              </div>
+              <div class="flex-1">
+                <button onclick="openOgImageSelector()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mb-2">
+                  <i class="fas fa-images mr-2"></i>画像を選択
+                </button>
+                ${contentFlow.og_image_url ? `
+                  <button onclick="removeOgImage()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 ml-2 mb-2">
+                    <i class="fas fa-times mr-2"></i>削除
+                  </button>
+                ` : ''}
+                <p class="text-xs text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  未設定の場合、最初のH2見出しの画像が自動的に使用されます
+                </p>
+              </div>
+            </div>
+          </div>
+          
           <button onclick="regenerateSEO()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
             <i class="fas fa-sync-alt mr-2"></i>SEO項目を再生成
           </button>
@@ -920,7 +953,8 @@ async function saveArticle() {
         outline: contentFlow.outline,
         seo_title: seoTitle,
         meta_description: metaDescription,
-        target_keywords: targetKeywords
+        target_keywords: targetKeywords,
+        og_image_url: contentFlow.og_image_url || null
       })
     });
     
@@ -937,6 +971,7 @@ async function saveArticle() {
         seo_title: '',
         meta_description: '',
         target_keywords: '',
+        og_image_url: '',
         step: 'keyword'
       };
       showContentCreation();
@@ -1105,6 +1140,7 @@ async function editArticle(articleId) {
       contentFlow.seo_title = article.seo_title || '';
       contentFlow.meta_description = article.meta_description || '';
       contentFlow.target_keywords = article.target_keywords || '';
+      contentFlow.og_image_url = article.og_image_url || '';
       contentFlow.step = 'article'; // 記事編集ステップに設定
       contentFlow.editingArticleId = articleId; // 編集中の記事IDを保存
       
@@ -2996,4 +3032,123 @@ async function resetDecorationTemplate() {
 document.addEventListener('DOMContentLoaded', () => {
   initTextSelection();
 });
+
+// ===================================
+// アイキャッチ画像選択機能
+// ===================================
+
+// アイキャッチ画像選択モーダルを開く
+async function openOgImageSelector() {
+  try {
+    // 画像ライブラリを取得
+    const response = await fetch(`${API_BASE}/image-library`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      alert('画像ライブラリの取得に失敗しました');
+      return;
+    }
+    
+    const images = data.data || [];
+    
+    if (images.length === 0) {
+      alert('画像ライブラリに画像がありません。先に画像ライブラリから画像をアップロードしてください。');
+      return;
+    }
+    
+    // モーダルHTML生成
+    const modal = document.createElement('div');
+    modal.id = 'og-image-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+          <h3 class="text-xl font-bold">
+            <i class="fas fa-images mr-2 text-blue-600"></i>アイキャッチ画像を選択
+          </h3>
+          <button onclick="closeOgImageModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+          ${images.map(img => `
+            <div class="cursor-pointer hover:opacity-80 transition" 
+                 onclick="selectOgImage('${img.image_url}', '${escapeHtml(img.image_name)}')">
+              <img src="${img.image_url}" 
+                   alt="${escapeHtml(img.image_name)}" 
+                   class="w-full h-48 object-cover rounded-lg border-2 border-gray-300 hover:border-blue-500">
+              <p class="text-sm text-gray-600 mt-2 truncate">${escapeHtml(img.image_name)}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+  } catch (error) {
+    console.error('Open OG image selector error:', error);
+    alert('画像選択モーダルの表示に失敗しました');
+  }
+}
+
+// アイキャッチ画像選択モーダルを閉じる
+function closeOgImageModal() {
+  const modal = document.getElementById('og-image-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// アイキャッチ画像を選択
+function selectOgImage(imageUrl, imageName) {
+  contentFlow.og_image_url = imageUrl;
+  
+  // プレビュー更新
+  const preview = document.getElementById('og-image-preview');
+  if (preview) {
+    preview.innerHTML = `
+      <img src="${imageUrl}" alt="${escapeHtml(imageName)}" 
+           class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300">
+    `;
+  }
+  
+  // モーダルを閉じる
+  closeOgImageModal();
+  
+  // ボタンを更新
+  renderArticleStep();
+  
+  showToast('アイキャッチ画像を設定しました');
+}
+
+// アイキャッチ画像を削除
+function removeOgImage() {
+  if (!confirm('アイキャッチ画像を削除しますか？\n※最初のH2見出しの画像が自動的に使用されます')) {
+    return;
+  }
+  
+  contentFlow.og_image_url = '';
+  
+  // プレビュー更新
+  const preview = document.getElementById('og-image-preview');
+  if (preview) {
+    preview.innerHTML = `
+      <div class="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+        <i class="fas fa-image text-gray-400 text-3xl"></i>
+      </div>
+    `;
+  }
+  
+  // ボタンを更新
+  renderArticleStep();
+  
+  showToast('アイキャッチ画像を削除しました');
+}
 

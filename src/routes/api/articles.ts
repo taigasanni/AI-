@@ -79,7 +79,7 @@ articles.get('/:id', async (c) => {
 articles.post('/', async (c) => {
   try {
     const user = c.get('user');
-    const {
+    let {
       title,
       slug,
       status,
@@ -97,6 +97,15 @@ articles.post('/', async (c) => {
         success: false,
         error: 'Title is required'
       }, 400);
+    }
+
+    // og_image_urlが未設定の場合、最初のH2見出しの画像を取得
+    if (!og_image_url && content) {
+      const firstH2Image = await getFirstH2Image(c.env.DB, content);
+      if (firstH2Image) {
+        og_image_url = firstH2Image;
+        console.log('✅ Auto-assigned OG image from first H2:', og_image_url);
+      }
     }
 
     const result = await c.env.DB.prepare(
@@ -157,6 +166,15 @@ articles.put('/:id', async (c) => {
         success: false,
         error: 'Access denied'
       }, 403);
+    }
+
+    // og_image_urlが未設定でcontentが更新される場合、最初のH2見出しの画像を取得
+    if (updateData.og_image_url === null && updateData.content) {
+      const firstH2Image = await getFirstH2Image(c.env.DB, updateData.content);
+      if (firstH2Image) {
+        updateData.og_image_url = firstH2Image;
+        console.log('✅ Auto-assigned OG image from first H2:', firstH2Image);
+      }
     }
 
     // 更新フィールド構築
@@ -268,5 +286,43 @@ articles.delete('/:id', async (c) => {
     }, 500);
   }
 });
+
+/**
+ * Helper: 最初のH2見出しの画像URLを取得
+ */
+async function getFirstH2Image(db: any, content: string): Promise<string | null> {
+  try {
+    // Markdown本文から最初のH2見出しを抽出
+    const h2Match = content.match(/^##\s+(.+)$/m);
+    if (!h2Match) {
+      console.log('❌ No H2 heading found in content');
+      return null;
+    }
+    
+    const firstH2Text = h2Match[1].trim();
+    console.log('🔍 First H2 heading:', firstH2Text);
+    
+    // H2見出しに対応する画像を検索
+    const result = await db.prepare(
+      `SELECT il.image_url 
+       FROM heading_images hi
+       JOIN image_library il ON hi.image_name = il.image_name
+       WHERE hi.heading_text = ?
+       LIMIT 1`
+    ).bind(firstH2Text).first();
+    
+    if (result && result.image_url) {
+      console.log('✅ Found image for H2:', result.image_url);
+      return result.image_url;
+    }
+    
+    console.log('❌ No image found for H2:', firstH2Text);
+    return null;
+    
+  } catch (error) {
+    console.error('❌ Error in getFirstH2Image:', error);
+    return null;
+  }
+}
 
 export default articles;
