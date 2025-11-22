@@ -13,6 +13,7 @@ import prompts from './routes/api/prompts'
 import reference from './routes/api/reference'
 import models from './routes/api/models'
 import decoration from './routes/api/decoration'
+import blog from './routes/api/blog'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -42,6 +43,7 @@ app.route('/api/prompts', prompts)
 app.route('/api/reference', reference)
 app.route('/api/models', models)
 app.route('/api/decoration-template', decoration)
+app.route('/api/blog', blog)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -166,6 +168,10 @@ app.get('/admin', (c) => {
                     <a href="#" onclick="showArticleList()" data-page="articles" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-file-alt w-6"></i>
                         <span>記事一覧</span>
+                    </a>
+                    <a href="#" onclick="showBlogList()" data-page="blog" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-globe w-6"></i>
+                        <span>ブログ</span>
                     </a>
                     <a href="#" onclick="showInternalLinks()" data-page="links" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-link w-6"></i>

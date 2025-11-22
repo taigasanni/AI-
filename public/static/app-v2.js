@@ -1035,10 +1035,22 @@ async function showArticleList() {
                       </span>
                     </td>
                     <td class="py-3 px-4">${new Date(article.created_at).toLocaleDateString('ja-JP')}</td>
-                    <td class="py-3 px-4">
-                      <button onclick="editArticle(${article.id})" class="text-blue-600 hover:text-blue-800 mr-3" title="編集">
+                    <td class="py-3 px-4 space-x-2">
+                      <button onclick="editArticle(${article.id})" class="text-blue-600 hover:text-blue-800" title="編集">
                         <i class="fas fa-edit"></i>
                       </button>
+                      ${article.status === 'published' ? `
+                        <button onclick="viewArticle(${article.id})" class="text-green-600 hover:text-green-800" title="公開ページを見る">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="togglePublishStatus(${article.id}, 'draft')" class="text-orange-600 hover:text-orange-800" title="非公開にする">
+                          <i class="fas fa-eye-slash"></i>
+                        </button>
+                      ` : `
+                        <button onclick="togglePublishStatus(${article.id}, 'published')" class="text-green-600 hover:text-green-800" title="公開する">
+                          <i class="fas fa-globe"></i>
+                        </button>
+                      `}
                       <button onclick="deleteArticle(${article.id})" class="text-red-600 hover:text-red-800" title="削除">
                         <i class="fas fa-trash"></i>
                       </button>
@@ -1132,6 +1144,127 @@ async function deleteArticle(articleId) {
   } catch (error) {
     console.error('Delete article error:', error);
     alert('記事の削除に失敗しました');
+  }
+}
+
+// 公開/非公開を切り替え
+async function togglePublishStatus(articleId, newStatus) {
+  const confirmMsg = newStatus === 'published' 
+    ? 'この記事を公開しますか？' 
+    : 'この記事を非公開にしますか？';
+  
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/articles/${articleId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        status: newStatus
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const msg = newStatus === 'published' ? '記事を公開しました' : '記事を非公開にしました';
+      showToast(msg, 'success');
+      showArticleList(); // リロード
+    } else {
+      alert(data.error || 'ステータスの変更に失敗しました');
+    }
+  } catch (error) {
+    console.error('Toggle publish status error:', error);
+    alert('ステータスの変更に失敗しました');
+  }
+}
+
+// 公開記事を閲覧
+function viewArticle(articleId) {
+  // 新しいタブで公開ページを開く
+  window.open(`/blog/${articleId}`, '_blank');
+}
+
+// ===================================
+// ブログ画面（公開記事一覧）
+// ===================================
+async function showBlogList() {
+  updateSidebarActive('blog');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+          <i class="fas fa-globe mr-2"></i>公開ブログ
+        </h1>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div id="blog-list">
+          <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-4 text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch(`${API_BASE}/blog/articles`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const articles = data.data;
+      const listEl = document.getElementById('blog-list');
+      
+      if (articles.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-400"></i>
+            <p class="mt-4 text-gray-600">公開されている記事がありません</p>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${articles.map(article => `
+              <div class="border rounded-lg overflow-hidden hover:shadow-lg transition">
+                <div class="p-4">
+                  <h3 class="font-bold text-lg mb-2 text-gray-800">${escapeHtml(article.title)}</h3>
+                  <p class="text-sm text-gray-600 mb-4 line-clamp-3">
+                    ${escapeHtml(article.meta_description || article.content?.substring(0, 100) || '')}...
+                  </p>
+                  <div class="flex justify-between items-center text-xs text-gray-500 mb-3">
+                    <span><i class="far fa-calendar mr-1"></i>${new Date(article.published_at || article.created_at).toLocaleDateString('ja-JP')}</span>
+                    ${article.target_keywords ? `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${escapeHtml(article.target_keywords.split(',')[0])}</span>` : ''}
+                  </div>
+                  <a href="/blog/${article.id}" target="_blank" class="block w-full text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+                    <i class="fas fa-external-link-alt mr-2"></i>記事を見る
+                  </a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Load blog articles error:', error);
+    document.getElementById('blog-list').innerHTML = `
+      <div class="text-center py-8 text-red-600">
+        <i class="fas fa-exclamation-circle text-4xl"></i>
+        <p class="mt-4">記事の読み込みに失敗しました</p>
+      </div>
+    `;
   }
 }
 

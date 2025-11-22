@@ -15,19 +15,19 @@ publicRoutes.get('/', (c) => {
 });
 
 /**
- * GET /blog/:slug - 記事公開ページ
+ * GET /blog/:id - 記事公開ページ（IDまたはslug）
  */
-publicRoutes.get('/blog/:slug', async (c) => {
+publicRoutes.get('/blog/:id', async (c) => {
   try {
-    const slug = c.req.param('slug');
+    const idOrSlug = c.req.param('id');
 
-    // 公開済みの記事を取得
+    // IDまたはslugで公開済みの記事を取得
     const article = await c.env.DB.prepare(
       `SELECT a.*, u.name as author_name 
        FROM articles a 
        JOIN users u ON a.user_id = u.id 
-       WHERE a.slug = ? AND a.status = 'published'`
-    ).bind(slug).first();
+       WHERE (a.id = ? OR a.slug = ?) AND a.status = 'published'`
+    ).bind(idOrSlug, idOrSlug).first();
 
     if (!article) {
       return c.html(`
@@ -65,6 +65,7 @@ publicRoutes.get('/blog/:slug', async (c) => {
           <meta property="og:type" content="article">
           <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+          <link href="/static/markdown-preview.css" rel="stylesheet">
           <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
           <style>
             .article-content {
