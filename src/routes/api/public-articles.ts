@@ -95,13 +95,27 @@ publicArticlesApi.get('/:id', async (c) => {
        ORDER BY il.position ASC`
     ).bind(article.id).all();
 
-    // 内部リンクを本文に挿入
+    // 見出しと画像のマッピングを取得
+    const headingImages = await c.env.DB.prepare(
+      `SELECT hi.*, il.image_url, il.alt_text, il.width, il.height
+       FROM heading_images hi
+       JOIN image_library il ON hi.image_name = il.image_name`
+    ).all();
+
+    // 内部リンクと画像を本文に挿入
     let contentWithLinks = article.content;
     
     if (internalLinks.results && internalLinks.results.length > 0) {
       contentWithLinks = insertInternalLinks(
-        article.content, 
+        contentWithLinks, 
         internalLinks.results as any[]
+      );
+    }
+    
+    if (headingImages.results && headingImages.results.length > 0) {
+      contentWithLinks = insertHeadingImages(
+        contentWithLinks,
+        headingImages.results as any[]
       );
     }
 
@@ -263,6 +277,60 @@ function generateBlogCard(link: any): string {
     }
   }
 </style>
+`.trim();
+}
+
+/**
+ * H2見出し配下に画像を自動挿入する関数
+ */
+function insertHeadingImages(content: string, images: any[]): string {
+  const lines = content.split('\n');
+  const processedLines: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    processedLines.push(line);
+    
+    // H2見出し行を検出
+    const h2Match = line.match(/^##\s+(.+)$/);
+    
+    if (h2Match) {
+      const headingText = h2Match[1].trim();
+      
+      // この見出しに対応する画像を検索
+      const matchingImage = images.find(img => img.heading_text === headingText);
+      
+      if (matchingImage) {
+        // 見出しの直後に空行と画像を挿入
+        processedLines.push('');
+        processedLines.push(generateImageHtml(matchingImage));
+        processedLines.push('');
+      }
+    }
+  }
+  
+  return processedLines.join('\n');
+}
+
+/**
+ * 画像HTMLを生成する関数
+ */
+function generateImageHtml(image: any): string {
+  const width = image.width || 800;
+  const height = image.height || 450;
+  const altText = image.alt_text || '記事の画像';
+  
+  return `
+<figure style="margin: 2rem 0;">
+  <img 
+    src="${image.image_url}" 
+    alt="${altText}" 
+    width="${width}" 
+    height="${height}"
+    style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
+    loading="lazy"
+  />
+</figure>
 `.trim();
 }
 

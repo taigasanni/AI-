@@ -16,6 +16,7 @@ import decoration from './routes/api/decoration'
 import blog from './routes/api/blog'
 import publicArticlesApi from './routes/api/public-articles'
 import internalLinksApi from './routes/api/internal-links'
+import imageLibraryApi from './routes/api/image-library'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -48,6 +49,7 @@ app.route('/api/decoration-template', decoration)
 app.route('/api/blog', blog)
 app.route('/api/public/articles', publicArticlesApi)
 app.route('/api/internal-links', internalLinksApi)
+app.route('/api/image-library', imageLibraryApi)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -183,6 +185,10 @@ app.get('/admin', (c) => {
                         <i class="fas fa-link w-6"></i>
                         <span>内部リンク管理</span>
                     </a>
+                    <a href="#" onclick="event.preventDefault(); showImageLibrary(); return false;" data-page="images" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-images w-6"></i>
+                        <span>画像ライブラリ</span>
+                    </a>
                     <a href="#" onclick="showReferenceData()" data-page="reference" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-database w-6"></i>
                         <span>参照データ管理</span>
@@ -208,6 +214,7 @@ app.get('/admin', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app-v2.js"></script>
         <script src="/static/internal-links.js"></script>
+        <script src="/static/image-library.js"></script>
     </body>
     </html>
   `)
