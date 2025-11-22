@@ -201,6 +201,157 @@ function updateSidebarActive(page) {
 }
 
 // ===================================
+// プロンプト管理
+// ===================================
+async function loadUserPrompts() {
+  try {
+    const response = await fetch(`${API_BASE}/prompts`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const prompts = data.data;
+      const promptsSection = document.getElementById('prompts-section');
+      
+      if (prompts.length === 0) {
+        promptsSection.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-400"></i>
+            <p class="mt-4 text-gray-600">プロンプトがありません</p>
+          </div>
+        `;
+      } else {
+        const outlinePrompt = prompts.find(p => p.type === 'outline');
+        const articlePrompt = prompts.find(p => p.type === 'article_draft');
+        
+        promptsSection.innerHTML = `
+          ${outlinePrompt ? `
+            <div class="mb-6 p-4 border rounded-lg">
+              <h3 class="font-bold text-gray-800 mb-2">
+                <i class="fas fa-list-ul text-blue-600 mr-2"></i>
+                アウトライン生成プロンプト
+              </h3>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
+                <input type="text" id="outline-prompt-name" value="${escapeHtml(outlinePrompt.name)}" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  プロンプト本文
+                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{max_chars}}, {{tone}}</span>
+                </label>
+                <textarea id="outline-prompt-body" rows="8" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(outlinePrompt.body)}</textarea>
+              </div>
+              <button onclick="savePrompt(${outlinePrompt.id}, 'outline')" 
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-save mr-2"></i>保存
+              </button>
+              <div id="outline-prompt-status" class="mt-3"></div>
+            </div>
+          ` : ''}
+          
+          ${articlePrompt ? `
+            <div class="mb-4 p-4 border rounded-lg">
+              <h3 class="font-bold text-gray-800 mb-2">
+                <i class="fas fa-file-alt text-green-600 mr-2"></i>
+                記事執筆プロンプト
+              </h3>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
+                <input type="text" id="article-prompt-name" value="${escapeHtml(articlePrompt.name)}" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  プロンプト本文
+                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{outline}}, {{max_chars}}, {{tone}}</span>
+                </label>
+                <textarea id="article-prompt-body" rows="8" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(articlePrompt.body)}</textarea>
+              </div>
+              <button onclick="savePrompt(${articlePrompt.id}, 'article')" 
+                class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                <i class="fas fa-save mr-2"></i>保存
+              </button>
+              <div id="article-prompt-status" class="mt-3"></div>
+            </div>
+          ` : ''}
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Load prompts error:', error);
+  }
+}
+
+async function savePrompt(promptId, type) {
+  const nameId = type === 'outline' ? 'outline-prompt-name' : 'article-prompt-name';
+  const bodyId = type === 'outline' ? 'outline-prompt-body' : 'article-prompt-body';
+  const statusId = type === 'outline' ? 'outline-prompt-status' : 'article-prompt-status';
+  
+  const name = document.getElementById(nameId).value.trim();
+  const body = document.getElementById(bodyId).value.trim();
+  const statusEl = document.getElementById(statusId);
+
+  if (!name || !body) {
+    statusEl.innerHTML = `
+      <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        プロンプト名と本文を入力してください
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/prompts/${promptId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name,
+        body,
+        params: '{}'
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      statusEl.innerHTML = `
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+          <i class="fas fa-check-circle mr-2"></i>
+          プロンプトを保存しました
+        </div>
+      `;
+    } else {
+      statusEl.innerHTML = `
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          ${escapeHtml(data.error || 'プロンプトの保存に失敗しました')}
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Save prompt error:', error);
+    statusEl.innerHTML = `
+      <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        プロンプトの保存に失敗しました
+      </div>
+    `;
+  }
+}
+
+// ===================================
 // コンテンツ作成画面 (統合フロー)
 // ===================================
 function showContentCreation() {
@@ -847,6 +998,23 @@ async function showSettings() {
         </div>
       </div>
 
+      <!-- プロンプト管理 -->
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-file-alt mr-2"></i>プロンプト管理
+        </h2>
+        <p class="text-sm text-gray-600 mb-4">
+          AI生成に使用するプロンプトをカスタマイズできます。
+        </p>
+        
+        <div id="prompts-section">
+          <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-4 text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+
       <!-- ユーザー情報 -->
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -863,6 +1031,8 @@ async function showSettings() {
 
   // 既存のAPIキーを読み込む
   loadCurrentApiKey();
+  // プロンプトを読み込む
+  loadUserPrompts();
 }
 
 async function loadCurrentApiKey() {

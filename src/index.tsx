@@ -6,8 +6,13 @@ import type { Env } from './types'
 // API Routes
 import auth from './routes/api/auth'
 import articles from './routes/api/articles'
+import keywords from './routes/api/keywords'
 import generate from './routes/api/generate'
 import settings from './routes/api/settings'
+import prompts from './routes/api/prompts'
+
+// Public Routes
+import publicRoutes from './routes/public'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -21,11 +26,16 @@ app.use('/api/*', cors({
 // 静的ファイル配信
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// Public Routes (認証不要)
+app.route('/', publicRoutes)
+
 // APIルート
 app.route('/api/auth', auth)
 app.route('/api/articles', articles)
+app.route('/api/keywords', keywords)
 app.route('/api/generate', generate)
 app.route('/api/settings', settings)
+app.route('/api/prompts', prompts)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -36,8 +46,8 @@ app.get('/api/health', (c) => {
   })
 })
 
-// ルートページ - 管理画面
-app.get('/', (c) => {
+// 管理画面
+app.get('/admin', (c) => {
   return c.html(`
     <!DOCTYPE html>
     <html lang="ja">
