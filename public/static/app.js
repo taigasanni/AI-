@@ -781,21 +781,506 @@ function getStatusText(status) {
   return texts[status] || status;
 }
 
-// Placeholder functions for modals (to be implemented)
+// ===================================
+// モーダル管理
+// ===================================
+function showModal(modalHtml) {
+  // 既存のモーダルを削除
+  const existingModal = document.getElementById('modal-overlay');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // モーダルオーバーレイを作成
+  const modalOverlay = document.createElement('div');
+  modalOverlay.id = 'modal-overlay';
+  modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modalOverlay.innerHTML = modalHtml;
+  
+  // オーバーレイクリックで閉じる
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+  
+  document.body.appendChild(modalOverlay);
+}
+
+function closeModal() {
+  const modal = document.getElementById('modal-overlay');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// ===================================
+// プロジェクト作成モーダル
+// ===================================
 function showCreateProjectModal() {
-  alert('プロジェクト作成機能は開発中です');
+  const modalHtml = `
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+          <i class="fas fa-folder-plus text-blue-600 mr-2"></i>
+          新規プロジェクト作成
+        </h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form onsubmit="handleCreateProject(event)" id="create-project-form">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            プロジェクト名 <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="project-name" 
+            required
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="テックブログ">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            説明
+          </label>
+          <textarea 
+            id="project-description" 
+            rows="3"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="AI・テクノロジー関連のブログメディア"></textarea>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            ドメイン
+          </label>
+          <input 
+            type="text" 
+            id="project-domain" 
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="tech-blog.example.com">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            公開方法
+          </label>
+          <select 
+            id="project-publish-method"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            <option value="internal">内部CMS</option>
+            <option value="wordpress">WordPress</option>
+            <option value="manual">手動コピー</option>
+          </select>
+        </div>
+        
+        <div id="project-modal-message" class="mb-4 text-sm"></div>
+        
+        <div class="flex gap-3">
+          <button 
+            type="submit"
+            class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-200">
+            <i class="fas fa-check mr-2"></i>作成
+          </button>
+          <button 
+            type="button"
+            onclick="closeModal()"
+            class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-200">
+            キャンセル
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  showModal(modalHtml);
 }
 
+async function handleCreateProject(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('project-name').value;
+  const description = document.getElementById('project-description').value;
+  const domain = document.getElementById('project-domain').value;
+  const publishMethod = document.getElementById('project-publish-method').value;
+  const messageEl = document.getElementById('project-modal-message');
+  
+  try {
+    const response = await fetch(`${API_BASE}/projects`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        name,
+        description,
+        domain,
+        publish_method: publishMethod
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded">✓ プロジェクトを作成しました</div>';
+      setTimeout(() => {
+        closeModal();
+        showProjects();
+      }, 1000);
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">${data.error || 'プロジェクト作成に失敗しました'}</div>`;
+    }
+  } catch (error) {
+    console.error('Create project error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">プロジェクト作成に失敗しました</div>';
+  }
+}
+
+// ===================================
+// キーワード追加モーダル
+// ===================================
 function showAddKeywordModal() {
-  alert('キーワード追加機能は開発中です');
+  if (!selectedProjectId) {
+    alert('まずプロジェクトを選択してください');
+    return;
+  }
+  
+  const modalHtml = `
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+          <i class="fas fa-key text-purple-600 mr-2"></i>
+          キーワード追加
+        </h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form onsubmit="handleAddKeyword(event)" id="add-keyword-form">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            キーワード <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="keyword-text" 
+            required
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="AI ブログ 自動化">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            検索意図
+          </label>
+          <input 
+            type="text" 
+            id="keyword-search-intent" 
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="情報収集型 - AIでブログ運営を効率化したい人">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            メモ
+          </label>
+          <textarea 
+            id="keyword-notes" 
+            rows="3"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="キーワードに関するメモ"></textarea>
+        </div>
+        
+        <div id="keyword-modal-message" class="mb-4 text-sm"></div>
+        
+        <div class="flex gap-3">
+          <button 
+            type="submit"
+            class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition duration-200">
+            <i class="fas fa-check mr-2"></i>追加
+          </button>
+          <button 
+            type="button"
+            onclick="closeModal()"
+            class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-200">
+            キャンセル
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  showModal(modalHtml);
 }
 
+async function handleAddKeyword(event) {
+  event.preventDefault();
+  
+  const keyword = document.getElementById('keyword-text').value;
+  const searchIntent = document.getElementById('keyword-search-intent').value;
+  const notes = document.getElementById('keyword-notes').value;
+  const messageEl = document.getElementById('keyword-modal-message');
+  
+  try {
+    const response = await fetch(`${API_BASE}/keywords`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        project_id: selectedProjectId,
+        keyword,
+        search_intent: searchIntent,
+        notes
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded">✓ キーワードを追加しました</div>';
+      setTimeout(() => {
+        closeModal();
+        showKeywords();
+      }, 1000);
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">${data.error || 'キーワード追加に失敗しました'}</div>`;
+    }
+  } catch (error) {
+    console.error('Add keyword error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">キーワード追加に失敗しました</div>';
+  }
+}
+
+// ===================================
+// 記事作成モーダル
+// ===================================
 function showCreateArticleModal() {
-  alert('記事作成機能は開発中です');
+  if (!selectedProjectId) {
+    alert('まずプロジェクトを選択してください');
+    return;
+  }
+  
+  const modalHtml = `
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+          <i class="fas fa-file-alt text-green-600 mr-2"></i>
+          新規記事作成
+        </h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form onsubmit="handleCreateArticle(event)" id="create-article-form">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            タイトル <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="article-title" 
+            required
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="AIでブログを自動化する方法">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            スラッグ (URL用)
+          </label>
+          <input 
+            type="text" 
+            id="article-slug" 
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="ai-blog-automation">
+          <p class="text-xs text-gray-500 mt-1">空欄の場合は自動生成されます</p>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            本文
+          </label>
+          <textarea 
+            id="article-content-input" 
+            rows="10"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm" 
+            placeholder="# 見出し1
+
+記事本文をMarkdown形式で入力してください..."></textarea>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            メタディスクリプション
+          </label>
+          <textarea 
+            id="article-meta-description" 
+            rows="2"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" 
+            placeholder="記事の概要を120文字以内で入力"></textarea>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            ステータス
+          </label>
+          <select 
+            id="article-status"
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            <option value="draft">下書き</option>
+            <option value="review">レビュー中</option>
+            <option value="scheduled">予約投稿</option>
+            <option value="published">公開済み</option>
+          </select>
+        </div>
+        
+        <div id="article-modal-message" class="mb-4 text-sm"></div>
+        
+        <div class="flex gap-3">
+          <button 
+            type="submit"
+            class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition duration-200">
+            <i class="fas fa-check mr-2"></i>作成
+          </button>
+          <button 
+            type="button"
+            onclick="closeModal()"
+            class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-200">
+            キャンセル
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  showModal(modalHtml);
 }
 
-function viewArticle(id) {
-  alert('記事詳細表示機能は開発中です');
+async function handleCreateArticle(event) {
+  event.preventDefault();
+  
+  const title = document.getElementById('article-title').value;
+  const slug = document.getElementById('article-slug').value;
+  const content = document.getElementById('article-content-input').value;
+  const metaDescription = document.getElementById('article-meta-description').value;
+  const status = document.getElementById('article-status').value;
+  const messageEl = document.getElementById('article-modal-message');
+  
+  try {
+    const response = await fetch(`${API_BASE}/articles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        project_id: selectedProjectId,
+        title,
+        slug: slug || null,
+        content,
+        meta_description: metaDescription,
+        status
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      messageEl.innerHTML = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded">✓ 記事を作成しました</div>';
+      setTimeout(() => {
+        closeModal();
+        showArticles();
+      }, 1000);
+    } else {
+      messageEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">${data.error || '記事作成に失敗しました'}</div>`;
+    }
+  } catch (error) {
+    console.error('Create article error:', error);
+    messageEl.innerHTML = '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">記事作成に失敗しました</div>';
+  }
+}
+
+// ===================================
+// 記事詳細表示
+// ===================================
+async function viewArticle(id) {
+  try {
+    const response = await fetch(`${API_BASE}/articles/${id}`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const article = data.data;
+      const modalHtml = `
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-file-alt text-blue-600 mr-2"></i>
+              記事詳細
+            </h2>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">${escapeHtml(article.title)}</h3>
+            <div class="flex gap-2 items-center text-sm text-gray-600">
+              <span class="px-3 py-1 rounded-full ${getStatusColor(article.status)}">${getStatusText(article.status)}</span>
+              <span><i class="fas fa-calendar mr-1"></i>${new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
+              ${article.slug ? `<span><i class="fas fa-link mr-1"></i>${escapeHtml(article.slug)}</span>` : ''}
+            </div>
+          </div>
+          
+          ${article.meta_description ? `
+          <div class="mb-6">
+            <h4 class="text-sm font-bold text-gray-700 mb-2">メタディスクリプション</h4>
+            <p class="text-gray-600 bg-gray-50 p-3 rounded">${escapeHtml(article.meta_description)}</p>
+          </div>
+          ` : ''}
+          
+          <div class="mb-6">
+            <h4 class="text-sm font-bold text-gray-700 mb-2">本文</h4>
+            <div class="prose max-w-none bg-gray-50 p-4 rounded">
+              <pre class="whitespace-pre-wrap text-sm">${escapeHtml(article.content || '(本文なし)')}</pre>
+            </div>
+          </div>
+          
+          <div class="flex gap-3">
+            <button onclick="editArticle(${article.id})" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-200">
+              <i class="fas fa-edit mr-2"></i>編集
+            </button>
+            <button onclick="closeModal()" class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition duration-200">
+              閉じる
+            </button>
+          </div>
+        </div>
+      `;
+      
+      showModal(modalHtml);
+    } else {
+      alert('記事の取得に失敗しました');
+    }
+  } catch (error) {
+    console.error('View article error:', error);
+    alert('記事の取得に失敗しました');
+  }
+}
+
+async function editArticle(id) {
+  alert('記事編集機能は開発中です (ID: ' + id + ')');
+  // 将来的には編集モーダルを表示
 }
 
 async function deleteArticle(id) {
