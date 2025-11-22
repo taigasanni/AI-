@@ -194,7 +194,7 @@ function updateSidebarActive(page) {
   document.querySelectorAll('.sidebar-link').forEach(link => {
     link.classList.remove('active');
   });
-  const activeLink = document.querySelector(`[data-page="${page}"]`);
+  const activeLink = document.querySelector(`.sidebar-link[data-page="${page}"]`);
   if (activeLink) {
     activeLink.classList.add('active');
   }
@@ -635,6 +635,294 @@ function copyToClipboard() {
   }).catch(() => {
     alert('コピーに失敗しました');
   });
+}
+
+// ===================================
+// 記事一覧画面
+// ===================================
+async function showArticleList() {
+  updateSidebarActive('articles');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+          <i class="fas fa-file-alt mr-2"></i>記事一覧
+        </h1>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div id="articles-list">
+          <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-4 text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch(`${API_BASE}/articles`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const articles = data.data;
+      const listEl = document.getElementById('articles-list');
+      
+      if (articles.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-400"></i>
+            <p class="mt-4 text-gray-600">まだ記事がありません</p>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-3 px-4">タイトル</th>
+                  <th class="text-left py-3 px-4">ステータス</th>
+                  <th class="text-left py-3 px-4">作成日</th>
+                  <th class="text-left py-3 px-4">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${articles.map(article => `
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4">${escapeHtml(article.title)}</td>
+                    <td class="py-3 px-4">
+                      <span class="px-2 py-1 rounded text-xs ${article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                        ${article.status}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4">${new Date(article.created_at).toLocaleDateString('ja-JP')}</td>
+                    <td class="py-3 px-4">
+                      <button onclick="deleteArticle(${article.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Load articles error:', error);
+    document.getElementById('articles-list').innerHTML = `
+      <div class="text-center py-8 text-red-600">
+        <i class="fas fa-exclamation-circle text-4xl"></i>
+        <p class="mt-4">記事の読み込みに失敗しました</p>
+      </div>
+    `;
+  }
+}
+
+async function deleteArticle(articleId) {
+  if (!confirm('この記事を削除してもよろしいですか?')) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/articles/${articleId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('記事を削除しました');
+      showArticleList(); // リロード
+    } else {
+      alert(data.error || '記事の削除に失敗しました');
+    }
+  } catch (error) {
+    console.error('Delete article error:', error);
+    alert('記事の削除に失敗しました');
+  }
+}
+
+// ===================================
+// 内部リンク管理画面
+// ===================================
+function showInternalLinks() {
+  updateSidebarActive('links');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+          <i class="fas fa-link mr-2"></i>内部リンク管理
+        </h1>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-center py-12">
+          <i class="fas fa-tools text-6xl text-gray-400 mb-4"></i>
+          <p class="text-xl text-gray-600 mb-2">この機能は開発中です</p>
+          <p class="text-gray-500">記事間の内部リンクを自動管理する機能を実装予定です</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================================
+// 設定画面
+// ===================================
+async function showSettings() {
+  updateSidebarActive('settings');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">
+        <i class="fas fa-cog mr-2"></i>設定
+      </h1>
+      
+      <!-- API設定 -->
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-key mr-2"></i>OpenAI API設定
+        </h2>
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">
+            OpenAI APIキー
+            <span class="text-red-500">*</span>
+          </label>
+          <input type="password" id="openai-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-...">
+          <p class="text-sm text-gray-600 mt-2">
+            <i class="fas fa-info-circle"></i>
+            記事生成にはOpenAI APIキーが必要です。
+            <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
+          </p>
+        </div>
+        <button onclick="saveApiKey()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+          <i class="fas fa-save mr-2"></i>保存
+        </button>
+        <div id="api-key-status" class="mt-4"></div>
+      </div>
+
+      <!-- ユーザー情報 -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-user mr-2"></i>ユーザー情報
+        </h2>
+        <div class="space-y-2">
+          <p><strong>メールアドレス:</strong> ${escapeHtml(currentUser?.email || '')}</p>
+          <p><strong>名前:</strong> ${escapeHtml(currentUser?.name || '')}</p>
+          <p><strong>役割:</strong> ${escapeHtml(currentUser?.role || '')}</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // 既存のAPIキーを読み込む
+  loadCurrentApiKey();
+}
+
+async function loadCurrentApiKey() {
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success && data.data.length > 0) {
+      const openaiKey = data.data.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        document.getElementById('api-key-status').innerHTML = `
+          <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+            <i class="fas fa-check-circle mr-2"></i>
+            OpenAI APIキーが設定されています
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Load API key error:', error);
+  }
+}
+
+async function saveApiKey() {
+  const apiKey = document.getElementById('openai-api-key').value.trim();
+  const statusEl = document.getElementById('api-key-status');
+
+  if (!apiKey) {
+    statusEl.innerHTML = `
+      <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        APIキーを入力してください
+      </div>
+    `;
+    return;
+  }
+
+  if (!apiKey.startsWith('sk-')) {
+    statusEl.innerHTML = `
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        APIキーは 'sk-' で始まる必要があります
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/settings/api-keys`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        provider: 'openai',
+        api_key: apiKey
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      statusEl.innerHTML = `
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+          <i class="fas fa-check-circle mr-2"></i>
+          APIキーを保存しました
+        </div>
+      `;
+      // 入力欄をクリア
+      document.getElementById('openai-api-key').value = '';
+    } else {
+      statusEl.innerHTML = `
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          ${escapeHtml(data.error || 'APIキーの保存に失敗しました')}
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Save API key error:', error);
+    statusEl.innerHTML = `
+      <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        APIキーの保存に失敗しました
+      </div>
+    `;
+  }
 }
 
 // ===================================

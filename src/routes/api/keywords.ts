@@ -5,37 +5,20 @@
 import { Hono } from 'hono';
 import type { Env, APIResponse } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
-import { getProjectById, getKeywordsByProjectId } from '../../lib/db';
+import { getKeywordsByUserId } from '../../lib/db';
 
 const keywords = new Hono<{ Bindings: Env }>();
 
 keywords.use('*', authMiddleware);
 
 /**
- * GET /api/projects/:projectId/keywords - キーワード一覧取得
+ * GET /api/keywords - キーワード一覧取得
  */
 keywords.get('/', async (c) => {
   try {
-    const projectId = parseInt(c.req.query('projectId') || '0');
     const user = c.get('user');
 
-    if (!projectId) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Project ID is required'
-      }, 400);
-    }
-
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, projectId);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
-    const keywordList = await getKeywordsByProjectId(c.env.DB, projectId);
+    const keywordList = await getKeywordsByUserId(c.env.DB, user.userId);
 
     return c.json<APIResponse>({
       success: true,
@@ -57,27 +40,18 @@ keywords.get('/', async (c) => {
 keywords.post('/', async (c) => {
   try {
     const user = c.get('user');
-    const { project_id, keyword, search_intent, notes } = await c.req.json();
+    const { keyword, search_intent, notes } = await c.req.json();
 
-    if (!project_id || !keyword) {
+    if (!keyword) {
       return c.json<APIResponse>({
         success: false,
-        error: 'Project ID and keyword are required'
+        error: 'Keyword is required'
       }, 400);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
     const result = await c.env.DB.prepare(
-      'INSERT INTO keywords (project_id, keyword, search_intent, notes) VALUES (?, ?, ?, ?)'
-    ).bind(project_id, keyword, search_intent || null, notes || null).run();
+      'INSERT INTO keywords (user_id, keyword, search_intent, notes) VALUES (?, ?, ?, ?)'
+    ).bind(user.userId, keyword, search_intent || null, notes || null).run();
 
     const newKeyword = await c.env.DB.prepare(
       'SELECT * FROM keywords WHERE id = ?'
@@ -118,9 +92,8 @@ keywords.delete('/:id', async (c) => {
       }, 404);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, keyword.project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
+    // ユーザー権限チェック
+    if (keyword.user_id !== user.userId && user.role !== 'admin') {
       return c.json<APIResponse>({
         success: false,
         error: 'Access denied'

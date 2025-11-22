@@ -141,10 +141,10 @@ export async function deleteProject(db: D1Database, projectId: number): Promise<
 /**
  * キーワード一覧取得
  */
-export async function getKeywordsByProjectId(db: D1Database, projectId: number): Promise<Keyword[]> {
+export async function getKeywordsByUserId(db: D1Database, userId: number): Promise<Keyword[]> {
   const result = await db.prepare(
-    'SELECT * FROM keywords WHERE project_id = ? ORDER BY created_at DESC'
-  ).bind(projectId).all<Keyword>();
+    'SELECT * FROM keywords WHERE user_id = ? ORDER BY created_at DESC'
+  ).bind(userId).all<Keyword>();
   
   return result.results || [];
 }
@@ -152,10 +152,10 @@ export async function getKeywordsByProjectId(db: D1Database, projectId: number):
 /**
  * 記事一覧取得
  */
-export async function getArticlesByProjectId(db: D1Database, projectId: number): Promise<Article[]> {
+export async function getArticlesByUserId(db: D1Database, userId: number): Promise<Article[]> {
   const result = await db.prepare(
-    'SELECT * FROM articles WHERE project_id = ? ORDER BY created_at DESC'
-  ).bind(projectId).all<Article>();
+    'SELECT * FROM articles WHERE user_id = ? ORDER BY created_at DESC'
+  ).bind(userId).all<Article>();
   
   return result.results || [];
 }
@@ -171,15 +171,15 @@ export async function getArticleById(db: D1Database, articleId: number): Promise
 }
 
 /**
- * プロンプト取得 (プロジェクト、タイプ、アクティブ)
+ * プロンプト取得 (ユーザー、タイプ、アクティブ)
  */
 export async function getActivePrompt(
   db: D1Database,
-  projectId: number,
+  userId: number,
   type: string
 ): Promise<Prompt | null> {
   const result = await db.prepare(
-    'SELECT * FROM prompts WHERE project_id = ? AND type = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1'
-  ).bind(projectId, type).first<Prompt>();
+    'SELECT * FROM prompts WHERE user_id = ? AND type = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1'
+  ).bind(userId, type).first<Prompt>();
   return result || null;
 }

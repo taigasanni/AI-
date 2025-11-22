@@ -54,6 +54,67 @@ auth.post('/register', async (c) => {
       }, 500);
     }
 
+    // デフォルトプロンプトを作成
+    try {
+      // Outline用デフォルトプロンプト
+      await c.env.DB.prepare(`
+        INSERT INTO prompts (user_id, type, name, body, params, is_active)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        userId,
+        'outline',
+        'デフォルト記事構成プロンプト',
+        `キーワード「{{keyword}}」に関する記事の構成案を作成してください。
+
+要件:
+- 記事の文字数: {{max_chars}}文字程度
+- トーン: {{tone}}
+- SEOを意識した見出し構成
+- 読者にとって価値のある内容
+
+以下のJSON形式で出力してください:
+{
+  "title": "記事タイトル",
+  "sections": [
+    {
+      "heading": "見出し1",
+      "points": ["ポイント1", "ポイント2"]
+    }
+  ]
+}`,
+        '{"max_chars": 3000, "tone": "professional"}',
+        1
+      ).run();
+
+      // Article Draft用デフォルトプロンプト
+      await c.env.DB.prepare(`
+        INSERT INTO prompts (user_id, type, name, body, params, is_active)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        userId,
+        'article_draft',
+        'デフォルト記事執筆プロンプト',
+        `キーワード「{{keyword}}」に関する記事を執筆してください。
+
+記事構成:
+{{outline}}
+
+要件:
+- 記事の文字数: {{max_chars}}文字程度
+- トーン: {{tone}}
+- SEOを意識しつつ自然な文章
+- Markdown形式で出力
+- 見出しは ## や ### を使用
+
+記事内容:`,
+        '{"max_chars": 3000, "tone": "professional"}',
+        1
+      ).run();
+    } catch (promptError) {
+      console.error('Failed to create default prompts:', promptError);
+      // プロンプト作成失敗してもユーザー登録は成功とする
+    }
+
     // JWTトークン生成
     const token = await generateJWT(
       { userId, email, role: 'editor' },

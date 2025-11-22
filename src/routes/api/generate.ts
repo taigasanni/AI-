@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import type { Env, APIResponse } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
-import { getProjectById, getActivePrompt } from '../../lib/db';
+import { getActivePrompt } from '../../lib/db';
 
 const generate = new Hono<{ Bindings: Env }>();
 
@@ -17,30 +17,21 @@ generate.use('*', authMiddleware);
 generate.post('/outline', async (c) => {
   try {
     const user = c.get('user');
-    const { project_id, keyword, params } = await c.req.json();
+    const { keyword, params } = await c.req.json();
 
-    if (!project_id || !keyword) {
+    if (!keyword) {
       return c.json<APIResponse>({
         success: false,
-        error: 'Project ID and keyword are required'
+        error: 'Keyword is required'
       }, 400);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
     // アクティブなプロンプト取得
-    const prompt = await getActivePrompt(c.env.DB, project_id, 'outline');
+    const prompt = await getActivePrompt(c.env.DB, user.userId, 'outline');
     if (!prompt) {
       return c.json<APIResponse>({
         success: false,
-        error: 'No active outline prompt found for this project'
+        error: 'No active outline prompt found. Please configure prompts in Settings.'
       }, 400);
     }
 
@@ -139,30 +130,21 @@ generate.post('/outline', async (c) => {
 generate.post('/article', async (c) => {
   try {
     const user = c.get('user');
-    const { project_id, keyword, outline, params } = await c.req.json();
+    const { keyword, outline, params } = await c.req.json();
 
-    if (!project_id || !keyword) {
+    if (!keyword) {
       return c.json<APIResponse>({
         success: false,
-        error: 'Project ID and keyword are required'
+        error: 'Keyword is required'
       }, 400);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
     // アクティブなプロンプト取得
-    const prompt = await getActivePrompt(c.env.DB, project_id, 'article_draft');
+    const prompt = await getActivePrompt(c.env.DB, user.userId, 'article_draft');
     if (!prompt) {
       return c.json<APIResponse>({
         success: false,
-        error: 'No active article draft prompt found for this project'
+        error: 'No active article draft prompt found. Please configure prompts in Settings.'
       }, 400);
     }
 

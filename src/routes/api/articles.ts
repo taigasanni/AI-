@@ -5,37 +5,20 @@
 import { Hono } from 'hono';
 import type { Env, APIResponse } from '../../types';
 import { authMiddleware } from '../../middleware/auth';
-import { getProjectById, getArticlesByProjectId, getArticleById } from '../../lib/db';
+import { getArticlesByUserId, getArticleById } from '../../lib/db';
 
 const articles = new Hono<{ Bindings: Env }>();
 
 articles.use('*', authMiddleware);
 
 /**
- * GET /api/articles?projectId=X - 記事一覧取得
+ * GET /api/articles - 記事一覧取得
  */
 articles.get('/', async (c) => {
   try {
-    const projectId = parseInt(c.req.query('projectId') || '0');
     const user = c.get('user');
 
-    if (!projectId) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Project ID is required'
-      }, 400);
-    }
-
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, projectId);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
-    const articleList = await getArticlesByProjectId(c.env.DB, projectId);
+    const articleList = await getArticlesByUserId(c.env.DB, user.userId);
 
     return c.json<APIResponse>({
       success: true,
@@ -68,9 +51,8 @@ articles.get('/:id', async (c) => {
       }, 404);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, article.project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
+    // ユーザー権限チェック
+    if (article.user_id !== user.userId && user.role !== 'admin') {
       return c.json<APIResponse>({
         success: false,
         error: 'Access denied'
@@ -98,7 +80,6 @@ articles.post('/', async (c) => {
   try {
     const user = c.get('user');
     const {
-      project_id,
       title,
       slug,
       status,
@@ -107,27 +88,18 @@ articles.post('/', async (c) => {
       og_image_url
     } = await c.req.json();
 
-    if (!project_id || !title) {
+    if (!title) {
       return c.json<APIResponse>({
         success: false,
-        error: 'Project ID and title are required'
+        error: 'Title is required'
       }, 400);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
-      return c.json<APIResponse>({
-        success: false,
-        error: 'Access denied'
-      }, 403);
-    }
-
     const result = await c.env.DB.prepare(
-      `INSERT INTO articles (project_id, title, slug, status, content, meta_description, og_image_url)
+      `INSERT INTO articles (user_id, title, slug, status, content, meta_description, og_image_url)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).bind(
-      project_id,
+      user.userId,
       title,
       slug || null,
       status || 'draft',
@@ -171,9 +143,8 @@ articles.put('/:id', async (c) => {
       }, 404);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, article.project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
+    // ユーザー権限チェック
+    if (article.user_id !== user.userId && user.role !== 'admin') {
       return c.json<APIResponse>({
         success: false,
         error: 'Access denied'
@@ -250,9 +221,8 @@ articles.delete('/:id', async (c) => {
       }, 404);
     }
 
-    // プロジェクトアクセス権限チェック
-    const project = await getProjectById(c.env.DB, article.project_id);
-    if (!project || (project.user_id !== user.userId && user.role !== 'admin')) {
+    // ユーザー権限チェック
+    if (article.user_id !== user.userId && user.role !== 'admin') {
       return c.json<APIResponse>({
         success: false,
         error: 'Access denied'
