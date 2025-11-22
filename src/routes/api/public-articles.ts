@@ -102,29 +102,35 @@ publicArticlesApi.get('/:id', async (c) => {
        JOIN image_library il ON hi.image_name = il.image_name`
     ).all();
 
-    // 内部リンクと画像を本文に挿入
-    let contentWithLinks = article.content;
+    // 画像と内部リンクを本文に挿入
+    // 重要: 画像を先に挿入してから内部リンクを挿入
+    let contentWithEnhancements = article.content;
     
-    if (internalLinks.results && internalLinks.results.length > 0) {
-      contentWithLinks = insertInternalLinks(
-        contentWithLinks, 
-        internalLinks.results as any[]
-      );
-    }
-    
+    // 1. まず画像を挿入
     if (headingImages.results && headingImages.results.length > 0) {
-      contentWithLinks = insertHeadingImages(
-        contentWithLinks,
+      contentWithEnhancements = insertHeadingImages(
+        contentWithEnhancements,
         headingImages.results as any[]
       );
+      console.log('✅ Images inserted:', headingImages.results.length);
+    }
+    
+    // 2. 次に内部リンクを挿入
+    if (internalLinks.results && internalLinks.results.length > 0) {
+      contentWithEnhancements = insertInternalLinks(
+        contentWithEnhancements, 
+        internalLinks.results as any[]
+      );
+      console.log('✅ Internal links inserted:', internalLinks.results.length);
     }
 
     return c.json({
       success: true,
       data: {
         ...article,
-        content: contentWithLinks,
-        internal_links: internalLinks.results || []
+        content: contentWithEnhancements,
+        internal_links: internalLinks.results || [],
+        heading_images: headingImages.results || []
       }
     });
 
@@ -284,8 +290,11 @@ function generateBlogCard(link: any): string {
  * H2見出し配下に画像を自動挿入する関数
  */
 function insertHeadingImages(content: string, images: any[]): string {
+  console.log('🖼️ insertHeadingImages called with', images.length, 'images');
+  
   const lines = content.split('\n');
   const processedLines: string[] = [];
+  let insertedCount = 0;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -296,19 +305,28 @@ function insertHeadingImages(content: string, images: any[]): string {
     
     if (h2Match) {
       const headingText = h2Match[1].trim();
+      console.log('📝 Found H2 heading:', headingText);
       
       // この見出しに対応する画像を検索
-      const matchingImage = images.find(img => img.heading_text === headingText);
+      const matchingImage = images.find(img => {
+        console.log('🔍 Comparing:', img.heading_text, '===', headingText);
+        return img.heading_text === headingText;
+      });
       
       if (matchingImage) {
+        console.log('✅ Found matching image for heading:', headingText);
         // 見出しの直後に空行と画像を挿入
         processedLines.push('');
         processedLines.push(generateImageHtml(matchingImage));
         processedLines.push('');
+        insertedCount++;
+      } else {
+        console.log('❌ No matching image for heading:', headingText);
       }
     }
   }
   
+  console.log('🎉 Inserted', insertedCount, 'images');
   return processedLines.join('\n');
 }
 
