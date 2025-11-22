@@ -55,9 +55,17 @@ async function generateWithOpenAI(
     })
   });
 
+  const selectedModel = model || 'gpt-4o-mini';
+  
   if (!response.ok) {
     const errorData = await response.text();
     console.error('OpenAI API error:', errorData);
+    
+    // モデルが見つからない場合の特別なエラーメッセージ
+    if (response.status === 404) {
+      throw new Error(`モデル "${selectedModel}" が利用できません。APIキーがこのモデルへのアクセス権を持っていない可能性があります。設定画面で別のモデル（GPT-4o Miniなど）を選択してください。`);
+    }
+    
     throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
   }
 
@@ -82,7 +90,8 @@ async function generateWithAnthropic(
     content: m.content
   }));
 
-  const selectedModel = model || 'claude-3-5-sonnet-latest';
+  // Claude 3 Haikuは最も基本的なモデルで、すべてのAPIキーで利用可能
+  const selectedModel = model || 'claude-3-haiku-20240307';
   console.log(`Calling Anthropic API with model: ${selectedModel}`);
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -104,6 +113,12 @@ async function generateWithAnthropic(
   if (!response.ok) {
     const errorData = await response.text();
     console.error('Anthropic API error:', errorData);
+    
+    // モデルが見つからない場合の特別なエラーメッセージ
+    if (response.status === 404) {
+      throw new Error(`モデル "${selectedModel}" が利用できません。APIキーがこのモデルへのアクセス権を持っていない可能性があります。設定画面で別のモデル（Claude 3 Haikuなど）を選択してください。`);
+    }
+    
     throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
   }
 

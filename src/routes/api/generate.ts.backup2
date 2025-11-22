@@ -352,17 +352,46 @@ generate.post('/seo', async (c) => {
       }, 400);
     }
 
-    // ユーザーのAI設定を取得
-    const { provider, apiKey, modelName } = await getUserAIConfig(c.env.DB, user.userId, c.env, 'seo');
+    // ユーザーのAI APIキーを取得（優先順位: OpenAI, Anthropic）
+    const apiKeys = await c.env.DB.prepare(
+      'SELECT provider, api_key FROM api_settings WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC'
+    ).bind(user.userId).all<{ provider: string; api_key: string }>();
+
+    let provider: 'openai' | 'anthropic' | null = null;
+    let apiKey: string | null = null;
+
+    // 優先順位でAPIキーを選択
+    if (apiKeys.results && apiKeys.results.length > 0) {
+      const openaiKey = apiKeys.results.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        provider = 'openai';
+        apiKey = openaiKey.api_key;
+      } else {
+        const anthropicKey = apiKeys.results.find(k => k.provider === 'anthropic');
+        if (anthropicKey) {
+          provider = 'anthropic';
+          apiKey = anthropicKey.api_key;
+        }
+      }
+    }
+
+    // フォールバック: 環境変数のAPIキー
+    if (!apiKey) {
+      if (c.env.OPENAI_API_KEY) {
+        provider = 'openai';
+        apiKey = c.env.OPENAI_API_KEY;
+      } else if (c.env.ANTHROPIC_API_KEY) {
+        provider = 'anthropic';
+        apiKey = c.env.ANTHROPIC_API_KEY;
+      }
+    }
 
     if (!apiKey || !provider) {
       return c.json<APIResponse>({
         success: false,
-        error: 'AI API key not configured.'
+        error: 'AI API key not configured. Please set your OpenAI or Anthropic API key in Settings.'
       }, 400);
     }
-
-    console.log(`Using AI provider: ${provider}, model: ${modelName}`);
 
     // SEO項目生成プロンプト
     const seoPrompt = `あなたはSEO専門家です。以下の記事内容を分析し、SEO最適化された項目を生成してください。
@@ -387,7 +416,6 @@ ${content.substring(0, 1000)}
     const generatedText = await generateAIContent({
       provider,
       apiKey,
-      model: modelName || undefined,
       messages: [
         {
           role: 'system',
@@ -444,8 +472,37 @@ generate.post('/assist', async (c) => {
       }, 400);
     }
 
-    // ユーザーのAI設定を取得
-    const { provider, apiKey, modelName } = await getUserAIConfig(c.env.DB, user.userId, c.env, 'assist');
+    // ユーザーのAI APIキーを取得
+    const apiKeys = await c.env.DB.prepare(
+      'SELECT provider, api_key FROM api_settings WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC'
+    ).bind(user.userId).all<{ provider: string; api_key: string }>();
+
+    let provider: 'openai' | 'anthropic' | null = null;
+    let apiKey: string | null = null;
+
+    if (apiKeys.results && apiKeys.results.length > 0) {
+      const openaiKey = apiKeys.results.find(k => k.provider === 'openai');
+      if (openaiKey) {
+        provider = 'openai';
+        apiKey = openaiKey.api_key;
+      } else {
+        const anthropicKey = apiKeys.results.find(k => k.provider === 'anthropic');
+        if (anthropicKey) {
+          provider = 'anthropic';
+          apiKey = anthropicKey.api_key;
+        }
+      }
+    }
+
+    if (!apiKey) {
+      if (c.env.OPENAI_API_KEY) {
+        provider = 'openai';
+        apiKey = c.env.OPENAI_API_KEY;
+      } else if (c.env.ANTHROPIC_API_KEY) {
+        provider = 'anthropic';
+        apiKey = c.env.ANTHROPIC_API_KEY;
+      }
+    }
 
     if (!apiKey || !provider) {
       return c.json<APIResponse>({
@@ -453,8 +510,6 @@ generate.post('/assist', async (c) => {
         error: 'AI API key not configured.'
       }, 400);
     }
-
-    console.log(`Using AI provider: ${provider}, model: ${modelName}`);
 
     // AIアシスタントプロンプト
     const assistPrompt = `あなたはプロのライティングアシスタントです。
@@ -472,7 +527,6 @@ ${instruction || '文章をより読みやすく、明確に改善してくだ�
     const improvedText = await generateAIContent({
       provider,
       apiKey,
-      model: modelName || undefined,
       messages: [
         {
           role: 'system',

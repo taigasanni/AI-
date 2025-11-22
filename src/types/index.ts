@@ -62,7 +62,7 @@ export interface Keyword {
 
 export interface Article {
   id: number;
-  project_id: number;
+  user_id: number; // project_id → user_id (簡易版では直接user_idを使用)
   title: string;
   slug?: string;
   status: 'draft' | 'review' | 'scheduled' | 'published';
@@ -75,6 +75,10 @@ export interface Article {
   published_at?: string;
   created_at: string;
   updated_at: string;
+  seo_title?: string;
+  target_keywords?: string;
+  keyword?: string;
+  outline?: string; // JSON文字列またはオブジェクト
 }
 
 export interface Image {

@@ -85,7 +85,11 @@ articles.post('/', async (c) => {
       status,
       content,
       meta_description,
-      og_image_url
+      og_image_url,
+      seo_title,
+      target_keywords,
+      keyword,
+      outline
     } = await c.req.json();
 
     if (!title) {
@@ -96,8 +100,8 @@ articles.post('/', async (c) => {
     }
 
     const result = await c.env.DB.prepare(
-      `INSERT INTO articles (user_id, title, slug, status, content, meta_description, og_image_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO articles (user_id, title, slug, status, content, meta_description, og_image_url, seo_title, target_keywords, keyword, outline)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       user.userId,
       title,
@@ -105,7 +109,11 @@ articles.post('/', async (c) => {
       status || 'draft',
       content || null,
       meta_description || null,
-      og_image_url || null
+      og_image_url || null,
+      seo_title || title,
+      target_keywords || null,
+      keyword || null,
+      outline ? (typeof outline === 'string' ? outline : JSON.stringify(outline)) : null
     ).run();
 
     const newArticle = await getArticleById(c.env.DB, result.meta?.last_row_id || 0);
@@ -178,6 +186,22 @@ articles.put('/:id', async (c) => {
     if (updateData.og_image_url !== undefined) {
       fields.push('og_image_url = ?');
       values.push(updateData.og_image_url);
+    }
+    if (updateData.seo_title !== undefined) {
+      fields.push('seo_title = ?');
+      values.push(updateData.seo_title);
+    }
+    if (updateData.target_keywords !== undefined) {
+      fields.push('target_keywords = ?');
+      values.push(updateData.target_keywords);
+    }
+    if (updateData.keyword !== undefined) {
+      fields.push('keyword = ?');
+      values.push(updateData.keyword);
+    }
+    if (updateData.outline !== undefined) {
+      fields.push('outline = ?');
+      values.push(typeof updateData.outline === 'string' ? updateData.outline : JSON.stringify(updateData.outline));
     }
 
     fields.push('updated_at = CURRENT_TIMESTAMP');

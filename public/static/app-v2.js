@@ -11,6 +11,9 @@ let contentFlow = {
   keyword: '',
   outline: null,
   article: '',
+  seo_title: '',
+  meta_description: '',
+  target_keywords: '',
   step: 'keyword' // keyword, outline, article, rewrite
 };
 
@@ -493,54 +496,161 @@ function renderCurrentStep() {
       <div class="bg-white rounded-lg shadow-lg p-8">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">
           <i class="fas fa-file-alt text-purple-600 mr-2"></i>
-          ステップ3: 記事本文 ${contentFlow.step === 'rewrite' ? '(リライト済み)' : ''}
+          ステップ3: 記事編集 ${contentFlow.step === 'rewrite' ? '(リライト済み)' : ''}
         </h2>
         
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p class="text-blue-800">
-            <i class="fas fa-lightbulb mr-2"></i>
-            <strong>キーワード:</strong> ${escapeHtml(contentFlow.keyword)}
-          </p>
+        <!-- タブ切り替え -->
+        <div class="flex border-b mb-6">
+          <button onclick="switchTab('edit')" id="tab-edit" class="tab-button active px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600">
+            <i class="fas fa-edit mr-2"></i>編集
+          </button>
+          <button onclick="switchTab('preview')" id="tab-preview" class="tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-eye mr-2"></i>プレビュー
+          </button>
+          <button onclick="switchTab('seo')" id="tab-seo" class="tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-search mr-2"></i>SEO設定
+          </button>
         </div>
         
-        <div class="mb-6">
-          <label class="block text-gray-700 text-sm font-bold mb-2">記事本文 (Markdown)</label>
-          <textarea 
-            id="article-edit" 
-            rows="20"
-            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
-          >${escapeHtml(contentFlow.article)}</textarea>
-          <div class="flex justify-between items-center mt-2">
-            <p class="text-sm text-gray-500">
-              <i class="fas fa-info-circle mr-1"></i>
-              文字数: <span id="char-count">${contentFlow.article.length}</span>文字
+        <!-- 編集タブ -->
+        <div id="content-edit" class="tab-content">
+          ${contentFlow.editingArticleId ? `
+          <div class="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+            <p class="text-amber-800">
+              <i class="fas fa-pen mr-2"></i>
+              <strong>編集モード:</strong> 既存の記事を編集しています（ID: ${contentFlow.editingArticleId}）
             </p>
-            <button onclick="copyToClipboard()" class="text-blue-600 hover:underline text-sm">
-              <i class="fas fa-copy mr-1"></i>クリップボードにコピー
-            </button>
+          </div>
+          ` : ''}
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-blue-800">
+              <i class="fas fa-lightbulb mr-2"></i>
+              <strong>キーワード:</strong> ${escapeHtml(contentFlow.keyword)}
+            </p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">タイトル <span class="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                id="article-title" 
+                value="${escapeHtml(contentFlow.outline?.title || '')}"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">ステータス</label>
+              <select id="article-status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                <option value="draft">下書き</option>
+                <option value="review">レビュー中</option>
+                <option value="published">公開</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">記事本文 (Markdown) <span class="text-red-500">*</span></label>
+            <textarea 
+              id="article-edit" 
+              rows="20"
+              class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
+              oninput="updateCharCount()"
+            >${escapeHtml(contentFlow.article)}</textarea>
+            <div class="flex justify-between items-center mt-2">
+              <p class="text-sm text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>
+                文字数: <span id="char-count">${contentFlow.article.length}</span>文字
+              </p>
+              <button onclick="copyToClipboard()" class="text-blue-600 hover:underline text-sm">
+                <i class="fas fa-copy mr-1"></i>クリップボードにコピー
+              </button>
+            </div>
           </div>
         </div>
         
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">タイトル</label>
+        <!-- プレビュータブ -->
+        <div id="content-preview" class="tab-content hidden">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p class="text-blue-800 text-sm">
+              <i class="fas fa-edit mr-2"></i>
+              <strong>編集モード:</strong> プレビュー画面のコンテンツを直接クリックして編集できます。編集後、他の場所をクリックすると自動的に「記事編集」タブに反映されます。
+            </p>
+          </div>
+          <div class="prose max-w-none bg-gray-50 p-8 rounded-lg border">
+            <h1 class="text-4xl font-bold mb-4">${escapeHtml(contentFlow.outline?.title || '')}</h1>
+            <div class="text-sm text-gray-500 mb-6">
+              <i class="fas fa-calendar mr-2"></i>${new Date().toLocaleDateString('ja-JP')}
+              <span class="mx-2">|</span>
+              <i class="fas fa-tag mr-2"></i>${escapeHtml(contentFlow.keyword)}
+            </div>
+            <div id="article-preview-content" class="article-content"></div>
+          </div>
+        </div>
+        
+        <!-- SEO設定タブ -->
+        <div id="content-seo" class="tab-content hidden">
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p class="text-yellow-800">
+              <i class="fas fa-magic mr-2"></i>
+              <strong>AI自動生成:</strong> これらのSEO項目は記事生成時に自動で作成されています。必要に応じて編集してください。
+            </p>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              SEOタイトル <span class="text-gray-500 text-xs">(検索結果に表示されるタイトル、60文字以内推奨)</span>
+            </label>
             <input 
               type="text" 
-              id="article-title" 
-              value="${contentFlow.outline?.title || ''}"
+              id="seo-title" 
+              value="${escapeHtml(contentFlow.seo_title || contentFlow.outline?.title || '')}"
+              maxlength="60"
               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            <p class="text-xs text-gray-500 mt-1">
+              現在: <span id="seo-title-count">${(contentFlow.seo_title || contentFlow.outline?.title || '').length}</span>/60文字
+            </p>
           </div>
-          <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">ステータス</label>
-            <select id="article-status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-              <option value="draft">下書き</option>
-              <option value="review">レビュー中</option>
-              <option value="published">公開</option>
-            </select>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              メタディスクリプション <span class="text-gray-500 text-xs">(検索結果の説明文、120-160文字推奨)</span>
+            </label>
+            <textarea 
+              id="meta-description" 
+              rows="3"
+              maxlength="160"
+              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              oninput="updateMetaDescCount()"
+            >${escapeHtml(contentFlow.meta_description || '')}</textarea>
+            <p class="text-xs text-gray-500 mt-1">
+              現在: <span id="meta-desc-count">${(contentFlow.meta_description || '').length}</span>/160文字
+            </p>
           </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              ターゲットキーワード <span class="text-gray-500 text-xs">(カンマ区切りで3-5個)</span>
+            </label>
+            <input 
+              type="text" 
+              id="target-keywords" 
+              value="${escapeHtml(contentFlow.target_keywords || contentFlow.keyword)}"
+              placeholder="例: AI, ブログ, 自動化, SEO"
+              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-info-circle mr-1"></i>
+              これらのキーワードは記事のSEO最適化に使用されます
+            </p>
+          </div>
+          
+          <button onclick="regenerateSEO()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-sync-alt mr-2"></i>SEO項目を再生成
+          </button>
         </div>
         
-        <div class="flex gap-4">
+        <!-- アクションボタン -->
+        <div class="flex gap-4 mt-8 pt-6 border-t">
           <button onclick="backToOutline()" class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition">
             <i class="fas fa-arrow-left mr-2"></i>
             構成に戻る
@@ -551,17 +661,18 @@ function renderCurrentStep() {
           </button>
           <button onclick="saveArticle()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">
             <i class="fas fa-save mr-2"></i>
-            保存
+            ${contentFlow.editingArticleId ? '更新' : '保存'}
           </button>
         </div>
       </div>
     `;
     
-    // 文字数カウント
-    const textarea = document.getElementById('article-edit');
-    if (textarea) {
-      textarea.addEventListener('input', () => {
-        document.getElementById('char-count').textContent = textarea.value.length;
+    // SEO項目の文字数カウント更新
+    const seoTitleInput = document.getElementById('seo-title');
+    if (seoTitleInput) {
+      seoTitleInput.addEventListener('input', () => {
+        const count = document.getElementById('seo-title-count');
+        if (count) count.textContent = seoTitleInput.value.length;
       });
     }
   }
@@ -660,6 +771,10 @@ async function generateArticle() {
     
     if (data.success) {
       contentFlow.article = data.data.content;
+      
+      // SEO項目も自動生成
+      await generateSEOFields();
+      
       contentFlow.step = 'article';
       renderCurrentStep();
     } else {
@@ -725,10 +840,43 @@ async function rewriteArticle() {
   }
 }
 
+// SEO項目を自動生成
+async function generateSEOFields() {
+  try {
+    const response = await fetch(`${API_BASE}/generate/seo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        keyword: contentFlow.keyword,
+        content: contentFlow.article
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      contentFlow.seo_title = data.data.seo_title;
+      contentFlow.meta_description = data.data.meta_description;
+      contentFlow.target_keywords = data.data.target_keywords;
+    }
+  } catch (error) {
+    console.error('Generate SEO error:', error);
+    // エラーが出てもデフォルト値を使用
+    contentFlow.seo_title = contentFlow.outline?.title || contentFlow.keyword;
+    contentFlow.meta_description = `${contentFlow.keyword}に関する詳しい情報をお届けします。`;
+    contentFlow.target_keywords = contentFlow.keyword;
+  }
+}
+
 async function saveArticle() {
   const title = document.getElementById('article-title').value;
   const content = document.getElementById('article-edit').value;
   const status = document.getElementById('article-status').value;
+  const seoTitle = document.getElementById('seo-title').value;
+  const metaDescription = document.getElementById('meta-description').value;
+  const targetKeywords = document.getElementById('target-keywords').value;
   
   if (!title || !content) {
     alert('タイトルと本文を入力してください');
@@ -736,8 +884,15 @@ async function saveArticle() {
   }
   
   try {
-    const response = await fetch(`${API_BASE}/articles`, {
-      method: 'POST',
+    // 編集モードか新規作成モードかを判定
+    const isEditMode = !!contentFlow.editingArticleId;
+    const url = isEditMode 
+      ? `${API_BASE}/articles/${contentFlow.editingArticleId}` 
+      : `${API_BASE}/articles`;
+    const method = isEditMode ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
@@ -746,19 +901,27 @@ async function saveArticle() {
         title,
         content,
         status,
-        meta_description: contentFlow.outline?.meta_description || ''
+        keyword: contentFlow.keyword,
+        outline: contentFlow.outline,
+        seo_title: seoTitle,
+        meta_description: metaDescription,
+        target_keywords: targetKeywords
       })
     });
     
     const data = await response.json();
     
     if (data.success) {
-      alert('記事を保存しました');
+      showToast(isEditMode ? '✅ 記事を更新しました' : '✅ 記事を保存しました', 'success');
+      
       // フローをリセット
       contentFlow = {
         keyword: '',
         outline: null,
         article: '',
+        seo_title: '',
+        meta_description: '',
+        target_keywords: '',
         step: 'keyword'
       };
       showContentCreation();
@@ -858,7 +1021,10 @@ async function showArticleList() {
                     </td>
                     <td class="py-3 px-4">${new Date(article.created_at).toLocaleDateString('ja-JP')}</td>
                     <td class="py-3 px-4">
-                      <button onclick="deleteArticle(${article.id})" class="text-red-600 hover:text-red-800">
+                      <button onclick="editArticle(${article.id})" class="text-blue-600 hover:text-blue-800 mr-3" title="編集">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button onclick="deleteArticle(${article.id})" class="text-red-600 hover:text-red-800" title="削除">
                         <i class="fas fa-trash"></i>
                       </button>
                     </td>
@@ -878,6 +1044,54 @@ async function showArticleList() {
         <p class="mt-4">記事の読み込みに失敗しました</p>
       </div>
     `;
+  }
+}
+
+async function editArticle(articleId) {
+  try {
+    // 記事データを取得
+    const response = await fetch(`${API_BASE}/articles/${articleId}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const article = data.data;
+      
+      // outlineがJSON文字列の場合はパース
+      let outline = article.outline || null;
+      if (outline && typeof outline === 'string') {
+        try {
+          outline = JSON.parse(outline);
+        } catch (e) {
+          console.warn('Failed to parse outline JSON:', e);
+        }
+      }
+      
+      // contentFlowに記事データを読み込む
+      contentFlow.keyword = article.keyword || '';
+      contentFlow.outline = outline;
+      contentFlow.article = article.content || '';
+      contentFlow.seo_title = article.seo_title || '';
+      contentFlow.meta_description = article.meta_description || '';
+      contentFlow.target_keywords = article.target_keywords || '';
+      contentFlow.step = 'article'; // 記事編集ステップに設定
+      contentFlow.editingArticleId = articleId; // 編集中の記事IDを保存
+      
+      // コンテンツ作成画面を表示
+      showContentCreation();
+      
+      // トースト通知
+      showToast('📝 記事を読み込みました', 'success');
+    } else {
+      alert(data.error || '記事の読み込みに失敗しました');
+    }
+  } catch (error) {
+    console.error('Edit article error:', error);
+    alert('記事の読み込みに失敗しました');
   }
 }
 
@@ -939,100 +1153,180 @@ async function showSettings() {
   
   const contentArea = document.getElementById('content-area');
   contentArea.innerHTML = `
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
       <h1 class="text-3xl font-bold text-gray-800 mb-6">
         <i class="fas fa-cog mr-2"></i>設定
       </h1>
       
-      <!-- API設定 -->
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-robot mr-2"></i>AI API設定
-        </h2>
-        <p class="text-sm text-gray-600 mb-4">
-          記事生成にはOpenAIまたはAnthropic (Claude) のAPIキーが必要です。どちらか一方、または両方を設定できます。
-        </p>
-        
-        <!-- OpenAI -->
-        <div class="mb-6 p-4 border rounded-lg">
-          <h3 class="font-bold text-gray-800 mb-2 flex items-center">
-            <i class="fas fa-brain text-green-600 mr-2"></i>
-            OpenAI (GPT-4o-mini)
-          </h3>
-          <div class="mb-3">
-            <label class="block text-gray-700 text-sm font-bold mb-2">
-              OpenAI APIキー
-            </label>
-            <input type="password" id="openai-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-...">
-            <p class="text-sm text-gray-600 mt-2">
-              <i class="fas fa-info-circle"></i>
-              <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
-            </p>
-          </div>
-          <button onclick="saveApiKey('openai')" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-            <i class="fas fa-save mr-2"></i>OpenAI APIキーを保存
+      <!-- タブナビゲーション -->
+      <div class="bg-white rounded-t-lg shadow mb-0">
+        <div class="flex border-b">
+          <button onclick="switchSettingsTab('api-keys')" id="settings-tab-api-keys" class="settings-tab-button px-6 py-3 font-semibold text-blue-600 border-b-2 border-blue-600">
+            <i class="fas fa-key mr-2"></i>API Keys
           </button>
-          <div id="openai-status" class="mt-3"></div>
-        </div>
-
-        <!-- Anthropic -->
-        <div class="mb-4 p-4 border rounded-lg">
-          <h3 class="font-bold text-gray-800 mb-2 flex items-center">
-            <i class="fas fa-robot text-purple-600 mr-2"></i>
-            Anthropic (Claude 3.5 Sonnet)
-          </h3>
-          <div class="mb-3">
-            <label class="block text-gray-700 text-sm font-bold mb-2">
-              Anthropic APIキー
-            </label>
-            <input type="password" id="anthropic-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-ant-...">
-            <p class="text-sm text-gray-600 mt-2">
-              <i class="fas fa-info-circle"></i>
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
-            </p>
-          </div>
-          <button onclick="saveApiKey('anthropic')" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
-            <i class="fas fa-save mr-2"></i>Anthropic APIキーを保存
+          <button onclick="switchSettingsTab('prompts')" id="settings-tab-prompts" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-file-alt mr-2"></i>プロンプト
           </button>
-          <div id="anthropic-status" class="mt-3"></div>
+          <button onclick="switchSettingsTab('models')" id="settings-tab-models" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-brain mr-2"></i>AIモデル
+          </button>
+          <button onclick="switchSettingsTab('user-info')" id="settings-tab-user-info" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-user mr-2"></i>ユーザー情報
+          </button>
         </div>
       </div>
 
-      <!-- プロンプト管理 -->
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-file-alt mr-2"></i>プロンプト管理
-        </h2>
-        <p class="text-sm text-gray-600 mb-4">
-          AI生成に使用するプロンプトをカスタマイズできます。
-        </p>
+      <!-- タブコンテンツ -->
+      <div class="bg-white rounded-b-lg shadow p-6">
         
-        <div id="prompts-section">
-          <div class="text-center py-8">
-            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-            <p class="mt-4 text-gray-600">読み込み中...</p>
+        <!-- API Keys タブ -->
+        <div id="settings-content-api-keys" class="settings-tab-content">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-robot mr-2"></i>AI API設定
+          </h2>
+          <p class="text-sm text-gray-600 mb-4">
+            記事生成にはOpenAIまたはAnthropic (Claude) のAPIキーが必要です。どちらか一方、または両方を設定できます。
+          </p>
+          
+          <!-- OpenAI -->
+          <div class="mb-6 p-4 border rounded-lg">
+            <h3 class="font-bold text-gray-800 mb-2 flex items-center">
+              <i class="fas fa-brain text-green-600 mr-2"></i>
+              OpenAI (GPT-4o-mini)
+            </h3>
+            <div class="mb-3">
+              <label class="block text-gray-700 text-sm font-bold mb-2">
+                OpenAI APIキー
+              </label>
+              <input type="password" id="openai-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-...">
+              <p class="text-sm text-gray-600 mt-2">
+                <i class="fas fa-info-circle"></i>
+                <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">こちら</a>から取得できます。
+              </p>
+            </div>
+            <button onclick="saveApiKey('openai')" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+              <i class="fas fa-save mr-2"></i>OpenAI APIキーを保存
+            </button>
+            <div id="openai-status" class="mt-3"></div>
+          </div>
+
+          <!-- Anthropic -->
+          <div class="mb-4 p-4 border rounded-lg">
+            <h3 class="font-bold text-gray-800 mb-2 flex items-center">
+              <i class="fas fa-robot text-purple-600 mr-2"></i>
+              Anthropic (Claude 3.5 Sonnet)
+            </h3>
+            <div class="mb-3">
+              <label class="block text-gray-700 text-sm font-bold mb-2">
+                Anthropic APIキー
+              </label>
+              <input type="password" id="anthropic-api-key" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="sk-ant-...">
+              <p class="text-sm text-gray-600 mt-2">
+                <i class="fas fa-info-circle"></i>
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-blue-600 hover:underline">こチら</a>から取得できます。
+              </p>
+            </div>
+            <button onclick="saveApiKey('anthropic')" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+              <i class="fas fa-save mr-2"></i>Anthropic APIキーを保存
+            </button>
+            <div id="anthropic-status" class="mt-3"></div>
           </div>
         </div>
-      </div>
 
-      <!-- ユーザー情報 -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-user mr-2"></i>ユーザー情報
-        </h2>
-        <div class="space-y-2">
-          <p><strong>メールアドレス:</strong> ${escapeHtml(currentUser?.email || '')}</p>
-          <p><strong>名前:</strong> ${escapeHtml(currentUser?.name || '')}</p>
-          <p><strong>役割:</strong> ${escapeHtml(currentUser?.role || '')}</p>
+        <!-- プロンプトタブ -->
+        <div id="settings-content-prompts" class="settings-tab-content hidden">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-file-alt mr-2"></i>プロンプト管理
+          </h2>
+          <p class="text-sm text-gray-600 mb-4">
+            AI生成に使用するプロンプトをカスタマイズできます。
+          </p>
+          
+          <div id="prompts-section">
+            <div class="text-center py-8">
+              <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+              <p class="mt-4 text-gray-600">読み込み中...</p>
+            </div>
+          </div>
         </div>
+
+        <!-- AIモデルタブ -->
+        <div id="settings-content-models" class="settings-tab-content hidden">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-brain mr-2"></i>AIモデル設定
+          </h2>
+          <p class="text-sm text-gray-600 mb-4">
+            各機能で使用するAIモデルを選択できます。高品質なモデルほど精度が高くなりますが、コストも高くなります。
+          </p>
+          
+          <div id="models-section">
+            <div class="text-center py-8">
+              <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+              <p class="mt-4 text-gray-600">読み込み中...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ユーザー情報タブ -->
+        <div id="settings-content-user-info" class="settings-tab-content hidden">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-user mr-2"></i>ユーザー情報
+          </h2>
+          <div class="space-y-2">
+            <p><strong>メールアドレス:</strong> ${escapeHtml(currentUser?.email || '')}</p>
+            <p><strong>名前:</strong> ${escapeHtml(currentUser?.name || '')}</p>
+            <p><strong>役割:</strong> ${escapeHtml(currentUser?.role || '')}</p>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
 
   // 既存のAPIキーを読み込む
   loadCurrentApiKey();
-  // プロンプトを読み込む
-  loadUserPrompts();
+  // プロンプトを読み込む（遅延ロード）
+  // loadUserPrompts();
+  // AIモデル設定を読み込む（遅延ロード）
+  // loadModelSettings();
+}
+
+// 設定画面のタブ切り替え
+function switchSettingsTab(tab) {
+  // タブボタンのアクティブ状態を更新
+  const buttons = document.querySelectorAll('.settings-tab-button');
+  buttons.forEach(btn => {
+    btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+    btn.classList.add('text-gray-600', 'hover:text-blue-600');
+  });
+  
+  const activeButton = document.getElementById(`settings-tab-${tab}`);
+  if (activeButton) {
+    activeButton.classList.remove('text-gray-600', 'hover:text-blue-600');
+    activeButton.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+  }
+  
+  // タブコンテンツの表示切り替え
+  const contents = document.querySelectorAll('.settings-tab-content');
+  contents.forEach(content => content.classList.add('hidden'));
+  
+  const activeContent = document.getElementById(`settings-content-${tab}`);
+  if (activeContent) {
+    activeContent.classList.remove('hidden');
+  }
+  
+  // タブごとの初期化処理
+  if (tab === 'prompts') {
+    loadUserPrompts();
+  } else if (tab === 'models') {
+    // AIモデル設定を読み込んでHTMLを挿入
+    loadModelSettings().then(html => {
+      const modelsSection = document.getElementById('models-section');
+      if (modelsSection) {
+        modelsSection.innerHTML = html;
+      }
+    });
+  }
 }
 
 async function loadCurrentApiKey() {
@@ -1162,3 +1456,1262 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// タブ切り替え
+function switchTab(tab) {
+  // タブボタンのスタイル更新
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active', 'border-b-2', 'border-blue-600', 'text-blue-600');
+    btn.classList.add('text-gray-600');
+  });
+  
+  const activeBtn = document.getElementById(`tab-${tab}`);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'border-b-2', 'border-blue-600', 'text-blue-600');
+    activeBtn.classList.remove('text-gray-600');
+  }
+  
+  // コンテンツの表示切り替え
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  
+  const activeContent = document.getElementById(`content-${tab}`);
+  if (activeContent) {
+    activeContent.classList.remove('hidden');
+  }
+  
+  // プレビュータブの場合、Markdownをレンダリング
+  if (tab === 'preview') {
+    renderPreview();
+  }
+}
+
+// Markdownプレビューのレンダリング
+function renderPreview() {
+  const content = document.getElementById('article-edit').value;
+  const previewEl = document.getElementById('article-preview-content');
+  
+  if (previewEl) {
+    // 簡易Markdownレンダリング (marked.jsなしで基本的な変換)
+    let html = content
+      // 見出し
+      .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-bold mt-6 mb-4">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-bold mt-8 mb-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4">$1</h1>')
+      // 太字
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
+      // イタリック
+      .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
+      // リンク
+      .replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2" class="text-blue-600 hover:underline">$1</a>')
+      // リスト
+      .replace(/^\* (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
+      .replace(/^- (.*$)/gim, '<li class="ml-6 list-disc">$1</li>')
+      // 段落
+      .split('\n\n')
+      .map(p => p.trim() ? `<p class="mb-4 leading-relaxed">${p}</p>` : '')
+      .join('\n');
+    
+    previewEl.innerHTML = html;
+    
+    // プレビュー編集機能を有効化
+    enablePreviewEditing();
+  }
+}
+
+// 文字数カウント更新
+function updateCharCount() {
+  const textarea = document.getElementById('article-edit');
+  const countEl = document.getElementById('char-count');
+  if (textarea && countEl) {
+    countEl.textContent = textarea.value.length;
+  }
+}
+
+// メタディスクリプションの文字数カウント
+function updateMetaDescCount() {
+  const textarea = document.getElementById('meta-description');
+  const countEl = document.getElementById('meta-desc-count');
+  if (textarea && countEl) {
+    countEl.textContent = textarea.value.length;
+  }
+}
+
+// SEO項目の再生成
+async function regenerateSEO() {
+  if (!confirm('SEO項目を再生成しますか？現在の内容は上書きされます。')) {
+    return;
+  }
+  
+  const content = document.getElementById('article-edit').value;
+  if (!content) {
+    alert('記事本文を入力してください');
+    return;
+  }
+  
+  // ローディング表示
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+  btn.disabled = true;
+  
+  try {
+    await generateSEOFields();
+    
+    // フィールドを更新
+    document.getElementById('seo-title').value = contentFlow.seo_title;
+    document.getElementById('meta-description').value = contentFlow.meta_description;
+    document.getElementById('target-keywords').value = contentFlow.target_keywords;
+    
+    // カウント更新
+    document.getElementById('seo-title-count').textContent = contentFlow.seo_title.length;
+    document.getElementById('meta-desc-count').textContent = contentFlow.meta_description.length;
+    
+    alert('SEO項目を再生成しました');
+  } catch (error) {
+    alert('SEO項目の再生成に失敗しました');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+// ===================================
+// 参照データ管理画面
+// ===================================
+async function showReferenceData() {
+  updateSidebarActive('reference');
+  
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+          <i class="fas fa-database text-purple-600 mr-2"></i>
+          参照データ管理
+        </h1>
+        <button onclick="showAddReferenceData()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-bold">
+          <i class="fas fa-plus mr-2"></i>新規追加
+        </button>
+      </div>
+      
+      <!-- カテゴリーフィルター -->
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="flex gap-2">
+          <button onclick="filterReferenceData('all')" class="filter-btn active px-4 py-2 rounded-lg bg-purple-100 text-purple-800 font-semibold">
+            すべて
+          </button>
+          <button onclick="filterReferenceData('article')" class="filter-btn px-4 py-2 rounded-lg hover:bg-gray-100">
+            過去記事
+          </button>
+          <button onclick="filterReferenceData('snippet')" class="filter-btn px-4 py-2 rounded-lg hover:bg-gray-100">
+            スニペット
+          </button>
+          <button onclick="filterReferenceData('template')" class="filter-btn px-4 py-2 rounded-lg hover:bg-gray-100">
+            テンプレート
+          </button>
+          <button onclick="filterReferenceData('other')" class="filter-btn px-4 py-2 rounded-lg hover:bg-gray-100">
+            その他
+          </button>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow p-6">
+        <div id="reference-list">
+          <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-purple-500"></i>
+            <p class="mt-4 text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  loadReferenceData();
+}
+
+let currentReferenceFilter = 'all';
+
+async function filterReferenceData(category) {
+  currentReferenceFilter = category;
+  
+  // フィルターボタンのスタイル更新
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active', 'bg-purple-100', 'text-purple-800', 'font-semibold');
+    btn.classList.add('hover:bg-gray-100');
+  });
+  event.target.classList.add('active', 'bg-purple-100', 'text-purple-800', 'font-semibold');
+  event.target.classList.remove('hover:bg-gray-100');
+  
+  await loadReferenceData(category === 'all' ? null : category);
+}
+
+async function loadReferenceData(category = null) {
+  try {
+    const url = category 
+      ? `${API_BASE}/reference?category=${category}`
+      : `${API_BASE}/reference`;
+      
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const referenceList = data.data;
+      const listEl = document.getElementById('reference-list');
+      
+      if (referenceList.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-12">
+            <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-600 text-lg">参照データがまだありません</p>
+            <button onclick="showAddReferenceData()" class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
+              <i class="fas fa-plus mr-2"></i>最初のデータを追加
+            </button>
+          </div>
+        `;
+      } else {
+        listEl.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${referenceList.map(ref => `
+              <div class="border rounded-lg p-4 hover:shadow-lg transition">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="font-bold text-lg text-gray-800">${escapeHtml(ref.title)}</h3>
+                  <span class="text-xs px-2 py-1 rounded ${getCategoryColor(ref.category)}">
+                    ${getCategoryLabel(ref.category)}
+                  </span>
+                </div>
+                ${ref.description ? `
+                  <p class="text-sm text-gray-600 mb-3">${escapeHtml(ref.description)}</p>
+                ` : ''}
+                <div class="text-xs text-gray-500 mb-3">
+                  ${new Date(ref.created_at).toLocaleDateString('ja-JP')}
+                </div>
+                ${ref.tags ? `
+                  <div class="flex flex-wrap gap-1 mb-3">
+                    ${ref.tags.split(',').map(tag => `
+                      <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">${escapeHtml(tag.trim())}</span>
+                    `).join('')}
+                  </div>
+                ` : ''}
+                <div class="flex gap-2">
+                  <button onclick="viewReferenceData(${ref.id})" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
+                    <i class="fas fa-eye mr-1"></i>表示
+                  </button>
+                  <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
+                    <i class="fas fa-edit mr-1"></i>編集
+                  </button>
+                  <button onclick="deleteReferenceData(${ref.id})" class="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error('Load reference data error:', error);
+    alert('参照データの読み込みに失敗しました');
+  }
+}
+
+function getCategoryColor(category) {
+  const colors = {
+    'article': 'bg-blue-100 text-blue-800',
+    'snippet': 'bg-green-100 text-green-800',
+    'template': 'bg-yellow-100 text-yellow-800',
+    'other': 'bg-gray-100 text-gray-800'
+  };
+  return colors[category] || colors['other'];
+}
+
+function getCategoryLabel(category) {
+  const labels = {
+    'article': '過去記事',
+    'snippet': 'スニペット',
+    'template': 'テンプレート',
+    'other': 'その他'
+  };
+  return labels[category] || 'その他';
+}
+
+function showAddReferenceData() {
+  const contentArea = document.getElementById('content-area');
+  contentArea.innerHTML = `
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-6">
+        <button onclick="showReferenceData()" class="text-purple-600 hover:underline">
+          <i class="fas fa-arrow-left mr-2"></i>戻る
+        </button>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+          <i class="fas fa-plus-circle text-purple-600 mr-2"></i>
+          新しい参照データを追加
+        </h2>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">タイトル <span class="text-red-500">*</span></label>
+          <input type="text" id="ref-title" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="データのタイトル">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">カテゴリー</label>
+          <select id="ref-category" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+            <option value="article">過去記事</option>
+            <option value="snippet">スニペット</option>
+            <option value="template">テンプレート</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">説明</label>
+          <textarea id="ref-description" rows="2" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="このデータの簡単な説明"></textarea>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">タグ <span class="text-xs text-gray-500">(カンマ区切り)</span></label>
+          <input type="text" id="ref-tags" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="例: SEO, マーケティング, 事例">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">参照元URL</label>
+          <input type="url" id="ref-source-url" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500" placeholder="https://...">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 text-sm font-bold mb-2">コンテンツ <span class="text-red-500">*</span></label>
+          <textarea id="ref-content" rows="15" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 font-mono text-sm" placeholder="過去の記事やテキストデータをここに保存"></textarea>
+        </div>
+        
+        <div class="flex gap-4">
+          <button onclick="showReferenceData()" class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400">
+            <i class="fas fa-times mr-2"></i>キャンセル
+          </button>
+          <button onclick="saveReferenceData()" class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700">
+            <i class="fas fa-save mr-2"></i>保存
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function saveReferenceData(id = null) {
+  const title = document.getElementById('ref-title').value.trim();
+  const content = document.getElementById('ref-content').value.trim();
+  const category = document.getElementById('ref-category').value;
+  const description = document.getElementById('ref-description').value.trim();
+  const tags = document.getElementById('ref-tags').value.trim();
+  const sourceUrl = document.getElementById('ref-source-url').value.trim();
+  
+  if (!title || !content) {
+    alert('タイトルとコンテンツを入力してください');
+    return;
+  }
+  
+  try {
+    const url = id ? `${API_BASE}/reference/${id}` : `${API_BASE}/reference`;
+    const method = id ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        title,
+        content,
+        category,
+        description: description || null,
+        tags: tags || null,
+        source_url: sourceUrl || null
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert(id ? '参照データを更新しました' : '参照データを保存しました');
+      showReferenceData();
+    } else {
+      alert(data.error || '保存に失敗しました');
+    }
+  } catch (error) {
+    console.error('Save reference data error:', error);
+    alert('保存に失敗しました');
+  }
+}
+
+async function viewReferenceData(id) {
+  try {
+    const response = await fetch(`${API_BASE}/reference/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const ref = data.data;
+      const contentArea = document.getElementById('content-area');
+      contentArea.innerHTML = `
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <button onclick="showReferenceData()" class="text-purple-600 hover:underline">
+              <i class="fas fa-arrow-left mr-2"></i>戻る
+            </button>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="flex justify-between items-start mb-6">
+              <h2 class="text-3xl font-bold text-gray-800">${escapeHtml(ref.title)}</h2>
+              <span class="text-sm px-3 py-1 rounded ${getCategoryColor(ref.category)}">
+                ${getCategoryLabel(ref.category)}
+              </span>
+            </div>
+            
+            ${ref.description ? `
+              <p class="text-gray-600 mb-4">${escapeHtml(ref.description)}</p>
+            ` : ''}
+            
+            ${ref.tags ? `
+              <div class="flex flex-wrap gap-2 mb-4">
+                ${ref.tags.split(',').map(tag => `
+                  <span class="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded">${escapeHtml(tag.trim())}</span>
+                `).join('')}
+              </div>
+            ` : ''}
+            
+            ${ref.source_url ? `
+              <div class="mb-4">
+                <a href="${escapeHtml(ref.source_url)}" target="_blank" class="text-blue-600 hover:underline text-sm">
+                  <i class="fas fa-external-link-alt mr-1"></i>${escapeHtml(ref.source_url)}
+                </a>
+              </div>
+            ` : ''}
+            
+            <div class="border-t pt-6 mb-6">
+              <div class="bg-gray-50 p-6 rounded-lg">
+                <pre class="whitespace-pre-wrap font-sans">${escapeHtml(ref.content)}</pre>
+              </div>
+            </div>
+            
+            <div class="text-sm text-gray-500 mb-6">
+              作成日: ${new Date(ref.created_at).toLocaleString('ja-JP')}
+              ${ref.updated_at !== ref.created_at ? `<br>更新日: ${new Date(ref.updated_at).toLocaleString('ja-JP')}` : ''}
+            </div>
+            
+            <div class="flex gap-4">
+              <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">
+                <i class="fas fa-edit mr-2"></i>編集
+              </button>
+              <button onclick="copyReferenceContent(${ref.id})" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-copy mr-2"></i>コピー
+              </button>
+              <button onclick="deleteReferenceData(${ref.id})" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">
+                <i class="fas fa-trash mr-2"></i>削除
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('View reference data error:', error);
+    alert('データの読み込みに失敗しました');
+  }
+}
+
+async function editReferenceData(id) {
+  try {
+    const response = await fetch(`${API_BASE}/reference/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const ref = data.data;
+      const contentArea = document.getElementById('content-area');
+      contentArea.innerHTML = `
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-6">
+            <button onclick="viewReferenceData(${id})" class="text-purple-600 hover:underline">
+              <i class="fas fa-arrow-left mr-2"></i>戻る
+            </button>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+              <i class="fas fa-edit text-purple-600 mr-2"></i>
+              参照データを編集
+            </h2>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">タイトル <span class="text-red-500">*</span></label>
+              <input type="text" id="ref-title" value="${escapeHtml(ref.title)}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">カテゴリー</label>
+              <select id="ref-category" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+                <option value="article" ${ref.category === 'article' ? 'selected' : ''}>過去記事</option>
+                <option value="snippet" ${ref.category === 'snippet' ? 'selected' : ''}>スニペット</option>
+                <option value="template" ${ref.category === 'template' ? 'selected' : ''}>テンプレート</option>
+                <option value="other" ${ref.category === 'other' ? 'selected' : ''}>その他</option>
+              </select>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">説明</label>
+              <textarea id="ref-description" rows="2" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">${escapeHtml(ref.description || '')}</textarea>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">タグ <span class="text-xs text-gray-500">(カンマ区切り)</span></label>
+              <input type="text" id="ref-tags" value="${escapeHtml(ref.tags || '')}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">参照元URL</label>
+              <input type="url" id="ref-source-url" value="${escapeHtml(ref.source_url || '')}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500">
+            </div>
+            
+            <div class="mb-6">
+              <label class="block text-gray-700 text-sm font-bold mb-2">コンテンツ <span class="text-red-500">*</span></label>
+              <textarea id="ref-content" rows="15" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-purple-500 font-mono text-sm">${escapeHtml(ref.content)}</textarea>
+            </div>
+            
+            <div class="flex gap-4">
+              <button onclick="viewReferenceData(${id})" class="flex-1 bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400">
+                <i class="fas fa-times mr-2"></i>キャンセル
+              </button>
+              <button onclick="saveReferenceData(${id})" class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700">
+                <i class="fas fa-save mr-2"></i>更新
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Edit reference data error:', error);
+    alert('データの読み込みに失敗しました');
+  }
+}
+
+async function deleteReferenceData(id) {
+  if (!confirm('この参照データを削除しますか？この操作は取り消せません。')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/reference/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('参照データを削除しました');
+      showReferenceData();
+    } else {
+      alert(data.error || '削除に失敗しました');
+    }
+  } catch (error) {
+    console.error('Delete reference data error:', error);
+    alert('削除に失敗しました');
+  }
+}
+
+async function copyReferenceContent(id) {
+  try {
+    const response = await fetch(`${API_BASE}/reference/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      navigator.clipboard.writeText(data.data.content).then(() => {
+        alert('コンテンツをクリップボードにコピーしました');
+      });
+    }
+  } catch (error) {
+    console.error('Copy reference content error:', error);
+    alert('コピーに失敗しました');
+  }
+}
+
+// ===================================
+// AIモデル設定（設定画面に追加）
+// ===================================
+async function loadModelSettings() {
+  try {
+    const [availableResp, prefsResp] = await Promise.all([
+      fetch(`${API_BASE}/models/available`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      }),
+      fetch(`${API_BASE}/models/preferences`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      })
+    ]);
+
+    const available = await availableResp.json();
+    const prefs = await prefsResp.json();
+
+    if (available.success && prefs.success) {
+      const models = available.data;
+      const preferences = prefs.data;
+
+      const useCases = [
+        { id: 'outline', name: '記事構成生成', icon: 'list' },
+        { id: 'article', name: '記事本文生成', icon: 'file-alt' },
+        { id: 'rewrite', name: 'リライト', icon: 'redo' },
+        { id: 'seo', name: 'SEO項目生成', icon: 'search' },
+        { id: 'assist', name: 'AIアシスタント', icon: 'magic' }
+      ];
+
+      let html = '<div class="space-y-6">';
+      
+      // 動作確認済みモデルの表示
+      html += '<div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">';
+      html += '<p class="text-green-800 text-sm mb-2"><i class="fas fa-check-circle mr-2"></i>';
+      html += '<strong>このAPIキーで確実に動作するモデル:</strong></p>';
+      html += '<ul class="text-green-800 text-sm list-disc ml-6 space-y-1">';
+      html += '<li><strong>Claude 3 Opus</strong>: 最高性能。長文・複雑な内容に最適 ✅</li>';
+      html += '<li><strong>Claude 3 Haiku</strong>: 高速・低コスト。シンプルな記事向け ✅</li>';
+      html += '<li><strong>GPT-4o / GPT-4o Mini</strong>: OpenAIの最新モデル ✅</li>';
+      html += '</ul>';
+      html += '</div>';
+      
+      // ヒントセクション
+      html += '<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">';
+      html += '<p class="text-blue-800 text-sm mb-2"><i class="fas fa-lightbulb mr-2"></i>';
+      html += '<strong>推奨設定:</strong></p>';
+      html += '<ul class="text-blue-800 text-sm list-disc ml-6 space-y-1">';
+      html += '<li><strong>高品質な記事</strong>: Claude 3 Opus（記事構成・本文生成に最適）</li>';
+      html += '<li><strong>コスト重視</strong>: Claude 3 Haiku（SEO生成・アシスタントに最適）</li>';
+      html += '<li><strong>バランス型</strong>: GPT-4o Mini</li>';
+      html += '</ul>';
+      html += '</div>';
+      
+      // エラー時の対処法
+      html += '<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">';
+      html += '<p class="text-yellow-800 text-sm"><i class="fas fa-exclamation-triangle mr-2"></i>';
+      html += '<strong>「モデルが見つかりません」エラーが出る場合:</strong> そのモデルはこのAPIキーでは利用できません。';
+      html += '上記の「✅確実に動作するモデル」から選択してください。';
+      html += '</p></div>';
+
+      useCases.forEach(useCase => {
+        const pref = preferences.find(p => p.use_case === useCase.id);
+        const currentProvider = pref?.provider || 'anthropic';
+        const currentModel = pref?.model_name || 'claude-3-haiku-20240307';
+
+        html += `<div class="border rounded-lg p-4">`;
+        html += `<h3 class="font-bold text-lg mb-4"><i class="fas fa-${useCase.icon} text-blue-600 mr-2"></i>${useCase.name}</h3>`;
+        html += `<div class="grid grid-cols-2 gap-4">`;
+        html += `<div>`;
+        html += `<label class="block text-sm font-semibold mb-2">プロバイダー</label>`;
+        html += `<select id="provider-${useCase.id}" class="w-full px-3 py-2 border rounded" onchange="updateModelOptions('${useCase.id}')">`;
+        html += `<option value="openai" ${currentProvider === 'openai' ? 'selected' : ''}>OpenAI</option>`;
+        html += `<option value="anthropic" ${currentProvider === 'anthropic' ? 'selected' : ''}>Anthropic (Claude)</option>`;
+        html += `</select>`;
+        html += `</div>`;
+        html += `<div>`;
+        html += `<label class="block text-sm font-semibold mb-2">モデル</label>`;
+        html += `<select id="model-${useCase.id}" class="w-full px-3 py-2 border rounded">`;
+        
+        const provider = currentProvider;
+        const modelList = models[provider] || [];
+        modelList.forEach(model => {
+          html += `<option value="${model.id}" ${model.id === currentModel ? 'selected' : ''}>${model.name}</option>`;
+        });
+        
+        html += `</select>`;
+        html += `</div>`;
+        html += `</div>`;
+        html += `<button onclick="saveModelPreference('${useCase.id}')" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">`;
+        html += `<i class="fas fa-save mr-2"></i>保存`;
+        html += `</button>`;
+        html += `<span id="status-${useCase.id}" class="ml-3 text-sm"></span>`;
+        html += `</div>`;
+      });
+
+      html += '</div>';
+      return html;
+    }
+  } catch (error) {
+    console.error('Load model settings error:', error);
+    return '<p class="text-red-600">モデル設定の読み込みに失敗しました</p>';
+  }
+}
+
+function updateModelOptions(useCase) {
+  const provider = document.getElementById(`provider-${useCase}`).value;
+  // モデルリストを更新（簡略化のため省略 - 実装時に完全版）
+}
+
+async function saveModelPreference(useCase) {
+  const provider = document.getElementById(`provider-${useCase}`).value;
+  const modelName = document.getElementById(`model-${useCase}`).value;
+  const statusEl = document.getElementById(`status-${useCase}`);
+
+  try {
+    const response = await fetch(`${API_BASE}/models/preferences`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ use_case: useCase, provider, model_name: modelName })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      statusEl.innerHTML = '<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>保存しました</span>';
+      setTimeout(() => { statusEl.innerHTML = ''; }, 3000);
+    } else {
+      statusEl.innerHTML = '<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>エラー</span>';
+    }
+  } catch (error) {
+    console.error('Save model preference error:', error);
+    statusEl.innerHTML = '<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>保存失敗</span>';
+  }
+}
+
+// プレビュー画面での編集機能
+function enablePreviewEditing() {
+  const previewContent = document.getElementById('article-preview-content');
+  if (previewContent) {
+    previewContent.setAttribute('contenteditable', 'true');
+    previewContent.style.border = '2px dashed #3b82f6';
+    previewContent.style.padding = '1rem';
+    previewContent.style.minHeight = '300px';
+    
+    // 編集時にMarkdownを更新
+    previewContent.addEventListener('blur', () => {
+      const htmlContent = previewContent.innerHTML;
+      // 簡易的にHTMLからMarkdownに変換（実際にはTurndownなどを使用）
+      const markdownContent = htmlToMarkdown(htmlContent);
+      const editTextarea = document.getElementById('article-edit');
+      if (editTextarea) {
+        editTextarea.value = markdownContent;
+      }
+    });
+  }
+}
+
+function htmlToMarkdown(html) {
+  // 簡易的な変換（実際の実装ではより高度なライブラリを使用）
+  let md = html;
+  md = md.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n');
+  md = md.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n');
+  md = md.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n');
+  md = md.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+  md = md.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**');
+  md = md.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+  md = md.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n');
+  md = md.replace(/<[^>]+>/g, ''); // Remove remaining tags
+  return md.trim();
+}
+
+// ===================================
+// テキスト選択AI修正機能
+// ===================================
+
+let aiAssistButton = null;
+
+// テキスト選択時にAIアシストボタンを表示
+function initTextSelection() {
+  document.addEventListener('mouseup', handleTextSelection);
+  document.addEventListener('touchend', handleTextSelection);
+}
+
+function handleTextSelection(e) {
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  
+  // 選択テキストがない、または既にボタンが表示中の場合
+  if (!selectedText || selectedText.length < 3) {
+    hideAIAssistButton();
+    return;
+  }
+  
+  // 対象の要素内かチェック（outline-edit, article-edit, article-preview-content）
+  const targetElements = ['outline-edit', 'article-edit', 'article-preview-content'];
+  const isInTarget = targetElements.some(id => {
+    const element = document.getElementById(id);
+    return element && element.contains(selection.anchorNode);
+  });
+  
+  if (!isInTarget) {
+    hideAIAssistButton();
+    return;
+  }
+  
+  // ボタンを表示
+  showAIAssistButton(e.pageX, e.pageY, selectedText, selection);
+}
+
+function showAIAssistButton(x, y, text, selection) {
+  hideAIAssistButton(); // 既存のボタンを削除
+  
+  aiAssistButton = document.createElement('div');
+  aiAssistButton.id = 'ai-assist-button';
+  aiAssistButton.className = 'fixed z-50 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all transform hover:scale-105';
+  aiAssistButton.style.left = `${x}px`;
+  aiAssistButton.style.top = `${y - 50}px`;
+  aiAssistButton.innerHTML = '<i class="fas fa-magic mr-2"></i>AIで改善';
+  
+  aiAssistButton.onclick = () => {
+    showAIAssistDialog(text, selection);
+  };
+  
+  document.body.appendChild(aiAssistButton);
+  
+  // 3秒後に自動で消える
+  setTimeout(() => {
+    if (aiAssistButton && aiAssistButton.parentNode) {
+      aiAssistButton.classList.add('opacity-0');
+      setTimeout(hideAIAssistButton, 300);
+    }
+  }, 3000);
+}
+
+function hideAIAssistButton() {
+  if (aiAssistButton && aiAssistButton.parentNode) {
+    aiAssistButton.remove();
+    aiAssistButton = null;
+  }
+}
+
+// チャット履歴を保持
+let chatHistory = [];
+
+function showAIAssistDialog(selectedText, selection) {
+  try {
+    console.log('showAIAssistDialog called with:', selectedText);
+    hideAIAssistButton();
+    
+    // 既にチャットパネルが開いている場合は閉じる
+    const existingPanel = document.getElementById('ai-chat-panel');
+    if (existingPanel) {
+      existingPanel.remove();
+    }
+    
+    // チャット履歴をリセット
+    chatHistory = [];
+    
+    // テキストをエスケープ
+    const escapedText = escapeHtml(selectedText || '');
+    console.log('Text escaped successfully');
+    
+    // サイドパネル（チャット形式）を作成
+    const panel = document.createElement('div');
+    panel.id = 'ai-chat-panel';
+    panel.className = 'fixed right-0 top-0 h-full w-96 bg-white shadow-2xl flex flex-col transform transition-transform duration-300';
+    panel.style.cssText = 'z-index: 9999; transform: translateX(100%);';
+    
+    console.log('Panel created:', panel);
+    
+    panel.innerHTML = `
+    <!-- ヘッダー -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold flex items-center">
+          <i class="fas fa-magic mr-2"></i>AIアシスタント
+        </h3>
+        <p class="text-xs text-purple-100 mt-1">チャットで修正依頼</p>
+      </div>
+      <button onclick="closeAIAssistDialog()" class="text-white hover:text-purple-200 transition">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+    
+    <!-- 選択されたテキスト表示 -->
+    <div class="bg-yellow-50 border-b border-yellow-200 p-3">
+      <p class="text-xs text-yellow-800 font-semibold mb-1">
+        <i class="fas fa-quote-left mr-1"></i>選択中のテキスト:
+      </p>
+      <div class="bg-white p-2 rounded border border-yellow-300 max-h-24 overflow-y-auto">
+        <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${escapedText}</p>
+      </div>
+    </div>
+    
+    <!-- チャットエリア -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+      <div class="text-center text-sm text-gray-500 py-8">
+        <i class="fas fa-comments text-4xl text-gray-300 mb-3"></i>
+        <p>修正したい内容をチャットで伝えてください</p>
+        <p class="text-xs mt-2">例: 「もっと簡潔に」「専門用語を減らして」</p>
+      </div>
+    </div>
+    
+    <!-- 入力エリア -->
+    <div class="border-t bg-white p-4">
+      <div class="flex gap-2">
+        <input 
+          type="text" 
+          id="chat-input" 
+          class="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:border-purple-500 text-sm"
+          placeholder="修正内容を入力... (例: もっと簡潔に)"
+          onkeypress="if(event.key==='Enter') sendChatMessage()"
+        >
+        <button 
+          onclick="sendChatMessage()" 
+          class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition"
+        >
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="mt-2 flex gap-2 flex-wrap">
+        <button onclick="quickPrompt('より簡潔に')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200">
+          ✂️ 簡潔に
+        </button>
+        <button onclick="quickPrompt('より詳しく')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200">
+          📝 詳しく
+        </button>
+        <button onclick="quickPrompt('カジュアルな表現に')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200">
+          😊 カジュアル
+        </button>
+        <button onclick="quickPrompt('ビジネス的に')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200">
+          💼 ビジネス
+        </button>
+      </div>
+    </div>
+  `;
+  
+    document.body.appendChild(panel);
+    console.log('Panel appended to body');
+    
+    // パネルが実際にDOMに存在するか確認
+    const addedPanel = document.getElementById('ai-chat-panel');
+    console.log('Panel in DOM:', addedPanel);
+    
+    // 選択範囲を保存
+    window.currentSelection = selection;
+    window.currentSelectedText = selectedText;
+    
+    // アニメーションでスライドイン
+    setTimeout(() => {
+      panel.style.transform = 'translateX(0)';
+      console.log('Panel animated in, transform:', panel.style.transform);
+    }, 10);
+    
+    // 入力フォーカス
+    setTimeout(() => {
+      const input = document.getElementById('chat-input');
+      if (input) {
+        input.focus();
+        console.log('Input focused');
+      } else {
+        console.error('chat-input not found!');
+      }
+    }, 350);
+    
+  } catch (error) {
+    console.error('Error in showAIAssistDialog:', error);
+    alert('チャットパネルの表示中にエラーが発生しました: ' + error.message);
+  }
+}
+
+function getSelectionRange() {
+  return window.currentSelection;
+}
+
+function closeAIAssistDialog() {
+  const panel = document.getElementById('ai-chat-panel');
+  if (panel) {
+    panel.style.transform = 'translateX(100%)';
+    setTimeout(() => panel.remove(), 300);
+  }
+  window.currentSelection = null;
+  window.currentSelectedText = null;
+  chatHistory = [];
+}
+
+// クイックプロンプト
+function quickPrompt(instruction) {
+  document.getElementById('chat-input').value = instruction;
+  sendChatMessage();
+}
+
+// チャットメッセージ送信
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const instruction = input.value.trim();
+  
+  if (!instruction) {
+    return;
+  }
+  
+  // ユーザーメッセージを表示
+  addChatMessage('user', instruction);
+  input.value = '';
+  
+  // AIの応答を待機
+  const thinkingId = addChatMessage('assistant', '<i class="fas fa-spinner fa-spin mr-2"></i>考え中...', true);
+  
+  try {
+    const response = await fetch(`${API_BASE}/generate/assist`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        selected_text: window.currentSelectedText,
+        instruction: instruction,
+        context: contentFlow.article || ''
+      })
+    });
+    
+    const data = await response.json();
+    
+    // "考え中"メッセージを削除
+    removeChatMessage(thinkingId);
+    
+    if (data.success) {
+      const improvedText = data.data.improved;
+      
+      // グローバル変数に保存（ボタンから参照するため）
+      window.pendingImprovement = {
+        text: improvedText,
+        instruction: instruction
+      };
+      
+      // AIの提案を表示
+      addChatMessage('assistant', `
+        <div class="space-y-2">
+          <p class="text-sm text-gray-600 mb-2">以下のように修正しました：</p>
+          <div class="bg-white p-3 rounded border border-green-200 text-sm">
+            ${escapeHtml(improvedText)}
+          </div>
+          <div class="flex gap-2 mt-3">
+            <button onclick="applyChatSuggestion(false)" 
+                    class="flex-1 bg-green-600 text-white text-xs px-3 py-2 rounded hover:bg-green-700">
+              <i class="fas fa-check mr-1"></i>適用
+            </button>
+            <button onclick="applyChatSuggestion(true)" 
+                    class="flex-1 bg-blue-600 text-white text-xs px-3 py-2 rounded hover:bg-blue-700">
+              <i class="fas fa-redo mr-1"></i>適用して続ける
+            </button>
+          </div>
+        </div>
+      `);
+      
+      // 現在のテキストを更新（次の修正のため）
+      window.currentSelectedText = improvedText;
+      chatHistory.push({ instruction, result: improvedText });
+      
+    } else {
+      removeChatMessage(thinkingId);
+      addChatMessage('assistant', `
+        <div class="text-red-600 text-sm">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          エラーが発生しました: ${escapeHtml(data.error || '不明なエラー')}
+        </div>
+      `);
+    }
+    
+  } catch (error) {
+    removeChatMessage(thinkingId);
+    console.error('Chat AI assist error:', error);
+    addChatMessage('assistant', `
+      <div class="text-red-600 text-sm">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        通信エラーが発生しました
+      </div>
+    `);
+  }
+}
+
+// チャットメッセージを追加
+let messageIdCounter = 0;
+function addChatMessage(role, content, isTemp = false) {
+  const messagesDiv = document.getElementById('chat-messages');
+  const messageId = `msg-${messageIdCounter++}`;
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.id = messageId;
+  messageDiv.className = role === 'user' 
+    ? 'flex justify-end' 
+    : 'flex justify-start';
+  
+  const bubble = document.createElement('div');
+  bubble.className = role === 'user'
+    ? 'bg-purple-600 text-white px-4 py-2 rounded-lg max-w-xs text-sm'
+    : 'bg-white border border-gray-200 px-4 py-2 rounded-lg max-w-sm text-sm shadow-sm';
+  
+  bubble.innerHTML = content;
+  messageDiv.appendChild(bubble);
+  messagesDiv.appendChild(messageDiv);
+  
+  // スクロールを最下部に
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  
+  return messageId;
+}
+
+// チャットメッセージを削除
+function removeChatMessage(messageId) {
+  const msg = document.getElementById(messageId);
+  if (msg) {
+    msg.remove();
+  }
+}
+
+// チャット提案を適用
+function applyChatSuggestion(continueChat) {
+  // グローバル変数から取得
+  if (!window.pendingImprovement) {
+    alert('適用するデータが見つかりません。');
+    return;
+  }
+  
+  const improvedText = window.pendingImprovement.text;
+  const instruction = window.pendingImprovement.instruction;
+  const selection = window.currentSelection;
+  
+  if (!selection) {
+    alert('選択範囲が失われました。もう一度テキストを選択してください。');
+    return;
+  }
+  
+  // 選択範囲を置き換え
+  try {
+    const range = selection.getRangeAt(0);
+    const targetElement = range.startContainer.parentElement || range.startContainer;
+    
+    // textarea または contenteditable の判定
+    let isTextarea = false;
+    let editElement = null;
+    
+    if (targetElement.tagName === 'TEXTAREA') {
+      isTextarea = true;
+      editElement = targetElement;
+    } else {
+      // contenteditableの親要素を探す
+      let parent = targetElement;
+      while (parent && !parent.getAttribute('contenteditable')) {
+        parent = parent.parentElement;
+      }
+      if (parent) {
+        editElement = parent;
+      }
+    }
+    
+    if (isTextarea) {
+      // textareaの場合
+      const textarea = editElement;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.substring(0, start);
+      const after = textarea.value.substring(end);
+      textarea.value = before + improvedText + after;
+      
+      // カーソル位置を更新
+      const newCursorPos = start + improvedText.length;
+      textarea.selectionStart = newCursorPos;
+      textarea.selectionEnd = newCursorPos;
+      
+      // 変更を反映
+      if (textarea.id === 'outline-edit') {
+        contentFlow.outline = textarea.value;
+      } else if (textarea.id === 'article-edit') {
+        contentFlow.article = textarea.value;
+        updateCharCount();
+      }
+      
+    } else if (editElement) {
+      // contenteditableの場合
+      range.deleteContents();
+      const textNode = document.createTextNode(improvedText);
+      range.insertNode(textNode);
+      
+      // カーソルをテキストの末尾に移動
+      range.setStartAfter(textNode);
+      range.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // プレビューの場合はMarkdownに反映
+      if (editElement.id === 'article-preview-content') {
+        const markdownContent = htmlToMarkdown(editElement.innerHTML);
+        const editTextarea = document.getElementById('article-edit');
+        if (editTextarea) {
+          editTextarea.value = markdownContent;
+          contentFlow.article = markdownContent;
+        }
+      }
+    }
+    
+    // 成功メッセージ
+    showToast('✅ テキストを置き換えました', 'success');
+    
+    // 適用して続ける場合はチャットを開いたまま
+    if (continueChat) {
+      // 新しいテキストを選択状態にする
+      window.currentSelectedText = improvedText;
+      addChatMessage('assistant', `
+        <div class="text-sm text-gray-600">
+          <i class="fas fa-check-circle text-green-600 mr-2"></i>
+          適用しました！続けて修正できます。
+        </div>
+      `);
+    } else {
+      // チャットを閉じる
+      setTimeout(() => closeAIAssistDialog(), 500);
+    }
+    
+  } catch (error) {
+    console.error('Apply suggestion error:', error);
+    showToast('❌ 適用に失敗しました', 'error');
+  }
+}
+
+// トースト通知
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+  toast.style.transform = 'translateY(-100px)';
+  toast.innerHTML = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+  
+  setTimeout(() => {
+    toast.style.transform = 'translateY(-100px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// 古いprocessAIAssist関数とapplyAIAssistResult関数は削除済み（チャット形式に置き換え）
+
+// 初期化時にテキスト選択機能を有効化
+document.addEventListener('DOMContentLoaded', () => {
+  initTextSelection();
+});
+

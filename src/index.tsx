@@ -10,6 +10,8 @@ import keywords from './routes/api/keywords'
 import generate from './routes/api/generate'
 import settings from './routes/api/settings'
 import prompts from './routes/api/prompts'
+import reference from './routes/api/reference'
+import models from './routes/api/models'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -36,6 +38,8 @@ app.route('/api/keywords', keywords)
 app.route('/api/generate', generate)
 app.route('/api/settings', settings)
 app.route('/api/prompts', prompts)
+app.route('/api/reference', reference)
+app.route('/api/models', models)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -57,6 +61,9 @@ app.get('/admin', (c) => {
         <title>AI Blog CMS</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <!-- Quill.js リッチテキストエディター -->
+        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
         <style>
           .sidebar-link:hover {
             background-color: rgba(59, 130, 246, 0.1);
@@ -65,6 +72,23 @@ app.get('/admin', (c) => {
             background-color: rgba(59, 130, 246, 0.2);
             border-left: 4px solid #3B82F6;
           }
+          /* 記事プレビューのスタイル */
+          .article-content h1 { font-size: 2.5rem; font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; }
+          .article-content h2 { font-size: 2rem; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+          .article-content h3 { font-size: 1.5rem; font-weight: bold; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+          .article-content p { margin-bottom: 1rem; line-height: 1.75; }
+          .article-content ul, .article-content ol { margin-left: 2rem; margin-bottom: 1rem; }
+          .article-content li { margin-bottom: 0.5rem; }
+          .article-content a { color: #2563eb; text-decoration: underline; }
+          .article-content strong { font-weight: bold; }
+          .article-content em { font-style: italic; }
+          .article-content code { background-color: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; }
+          /* Quill.js エディター */
+          .ql-container { min-height: 400px; font-size: 16px; }
+          .ql-editor { min-height: 400px; }
+          .ql-editor p { margin-bottom: 1em; }
+          /* AIアシスタントポップアップ */
+          .ai-assistant-popup { position: absolute; z-index: 1000; background: white; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         </style>
     </head>
     <body class="bg-gray-50">
@@ -142,6 +166,10 @@ app.get('/admin', (c) => {
                     <a href="#" onclick="showInternalLinks()" data-page="links" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-link w-6"></i>
                         <span>内部リンク管理</span>
+                    </a>
+                    <a href="#" onclick="showReferenceData()" data-page="reference" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-database w-6"></i>
+                        <span>参照データ管理</span>
                     </a>
                     <div class="border-t my-4"></div>
                     <a href="#" onclick="showSettings()" data-page="settings" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">

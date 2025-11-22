@@ -8,6 +8,13 @@ import type { Env } from '../types';
 const publicRoutes = new Hono<{ Bindings: Env }>();
 
 /**
+ * GET / - トップページ（管理画面へリダイレクト）
+ */
+publicRoutes.get('/', (c) => {
+  return c.redirect('/admin');
+});
+
+/**
  * GET /blog/:slug - 記事公開ページ
  */
 publicRoutes.get('/blog/:slug', async (c) => {
