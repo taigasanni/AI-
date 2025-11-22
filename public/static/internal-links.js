@@ -1,26 +1,22 @@
 /**
  * ===================================
- * 内部リンク管理 - マインドマップ形式
- * Internal Links Management - Mind Map Format
+ * 内部リンク管理 - トグル式マインドマップ
+ * Internal Links Management - Toggle Mind Map
  * ===================================
  */
 
-console.log('🗺️ Loading Mind Map Internal Links Module...');
+console.log('🗺️ Loading Toggle Mind Map Internal Links Module...');
 
 // グローバル変数
 let articles = [];
 let links = [];
-let svg, simulation, linkLayer, nodeLayer;
-let dragLine = null;
-let dragSourceNode = null;
-let nodes = [];
-let linksData = [];
+let dragSourceHeading = null;
 
 // ===================================
 // 初期化
 // ===================================
 function showInternalLinks() {
-  console.log('📋 Initializing Mind Map...');
+  console.log('📋 Initializing Toggle Mind Map...');
   
   updateSidebarActive('links');
   
@@ -31,14 +27,14 @@ function showInternalLinks() {
   }
   
   contentArea.innerHTML = `
-    <div class="max-w-full">
+    <div class="max-w-7xl mx-auto">
       <!-- ヘッダー -->
       <div class="mb-6">
         <h1 class="text-4xl font-bold text-gray-900 flex items-center">
           <i class="fas fa-project-diagram text-blue-600 mr-4"></i>
-          内部リンク管理 - マインドマップ
+          内部リンク管理 - トグル式マインドマップ
         </h1>
-        <p class="text-gray-600 mt-2 text-lg">記事と見出しをドラッグ&ドロップで接続してください</p>
+        <p class="text-gray-600 mt-2 text-lg">記事を展開して見出しを表示、見出しをドラッグ&ドロップで接続</p>
       </div>
 
       <!-- ツールバー -->
@@ -48,40 +44,39 @@ function showInternalLinks() {
             <button onclick="refreshMindMap()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow">
               <i class="fas fa-sync-alt mr-2"></i>更新
             </button>
-            <button onclick="resetLayout()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
-              <i class="fas fa-magic mr-2"></i>自動整列
+            <button onclick="expandAllArticles()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
+              <i class="fas fa-expand-alt mr-2"></i>すべて展開
+            </button>
+            <button onclick="collapseAllArticles()" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-bold shadow">
+              <i class="fas fa-compress-alt mr-2"></i>すべて折りたたみ
             </button>
             <button onclick="clearAllLinks()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow">
               <i class="fas fa-trash mr-2"></i>全リンク削除
             </button>
           </div>
-          <div class="text-gray-600">
-            <i class="fas fa-info-circle mr-2"></i>
-            記事をクリックして見出し表示、見出しをドラッグして他の見出しにドロップでリンク作成
-          </div>
         </div>
       </div>
 
-      <!-- マインドマップキャンバス -->
-      <div class="bg-white rounded-lg shadow-2xl p-4">
-        <div id="mindmap-container" style="width: 100%; height: 700px; border: 2px solid #e5e7eb; border-radius: 0.5rem; background: #f9fafb;">
-          <!-- SVGがここに描画されます -->
+      <!-- マインドマップコンテナ -->
+      <div class="grid grid-cols-1 gap-6">
+        <div id="articles-container" class="space-y-4">
+          <!-- 記事がここに表示されます -->
         </div>
       </div>
 
-      <!-- 凡例 -->
+      <!-- 使い方 -->
       <div class="mt-6 bg-blue-50 rounded-lg p-6">
-        <h3 class="font-bold text-lg text-gray-800 mb-4">操作方法:</h3>
+        <h3 class="font-bold text-lg text-gray-800 mb-4">📖 操作方法:</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-          <div><i class="fas fa-mouse-pointer text-blue-600 mr-2"></i><strong>記事ノード</strong>をクリック → 見出しを表示/非表示</div>
-          <div><i class="fas fa-hand-rock text-green-600 mr-2"></i><strong>見出しノード</strong>をドラッグ → 他の見出しにドロップしてリンク作成</div>
-          <div><i class="fas fa-arrows-alt text-purple-600 mr-2"></i><strong>任意のノード</strong>をドラッグ → 配置を調整</div>
-          <div><i class="fas fa-times-circle text-red-600 mr-2"></i><strong>リンク線</strong>をクリック → リンクを削除</div>
+          <div><i class="fas fa-chevron-down text-blue-600 mr-2"></i><strong>記事タイトル</strong>をクリック → 見出しを展開/折りたたみ</div>
+          <div><i class="fas fa-hand-rock text-green-600 mr-2"></i><strong>見出し</strong>をドラッグ → 他の見出しにドロップしてリンク作成</div>
+          <div><i class="fas fa-link text-purple-600 mr-2"></i><strong>作成されたリンク</strong>は見出しの下に表示されます</div>
+          <div><i class="fas fa-times-circle text-red-600 mr-2"></i><strong>リンクのゴミ箱アイコン</strong>をクリック → リンクを削除</div>
         </div>
       </div>
     </div>
 
-    <!-- リンク詳細モーダル -->
+    <!-- リンク作成モーダル -->
     <div id="link-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onclick="if(event.target.id==='link-modal') closeLinkModal()">
       <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4" onclick="event.stopPropagation()">
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
@@ -125,53 +120,7 @@ function showInternalLinks() {
     </div>
   `;
   
-  initMindMap();
   loadMindMapData();
-}
-
-// ===================================
-// マインドマップ初期化
-// ===================================
-function initMindMap() {
-  const container = document.getElementById('mindmap-container');
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  
-  // SVG作成
-  svg = d3.select('#mindmap-container')
-    .append('svg')
-    .attr('width', width)
-    .attr('height', height)
-    .call(d3.zoom()
-      .scaleExtent([0.3, 3])
-      .on('zoom', (event) => {
-        svg.select('g.main').attr('transform', event.transform);
-      }));
-  
-  const mainGroup = svg.append('g').attr('class', 'main');
-  
-  // 矢印マーカー定義
-  mainGroup.append('defs').append('marker')
-    .attr('id', 'arrowhead')
-    .attr('viewBox', '-0 -5 10 10')
-    .attr('refX', 30)
-    .attr('refY', 0)
-    .attr('orient', 'auto')
-    .attr('markerWidth', 8)
-    .attr('markerHeight', 8)
-    .append('path')
-    .attr('d', 'M 0,-5 L 10,0 L 0,5')
-    .attr('fill', '#3B82F6');
-  
-  linkLayer = mainGroup.append('g').attr('class', 'links');
-  nodeLayer = mainGroup.append('g').attr('class', 'nodes');
-  
-  // Force Simulation
-  simulation = d3.forceSimulation()
-    .force('link', d3.forceLink().id(d => d.id).distance(200))
-    .force('charge', d3.forceManyBody().strength(-800))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(100));
 }
 
 // ===================================
@@ -221,312 +170,205 @@ async function loadMindMapData() {
 // マインドマップ描画
 // ===================================
 function renderMindMap() {
-  console.log('🎨 Rendering mind map...');
+  console.log('🎨 Rendering toggle mind map...');
   
-  nodes = [];
-  linksData = [];
+  const container = document.getElementById('articles-container');
+  if (!container) return;
   
-  // 記事ノードと見出しノードを作成
-  articles.forEach((article, idx) => {
-    const articleNode = {
-      id: `article-${article.id}`,
-      type: 'article',
-      label: article.title,
-      articleId: article.id,
-      article: article,
-      expanded: article.expanded
-    };
-    nodes.push(articleNode);
+  container.innerHTML = '';
+  
+  articles.forEach((article, index) => {
+    const articleCard = document.createElement('div');
+    articleCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all';
     
-    // 見出しノード（展開時）
+    // 記事ヘッダー（トグルボタン）
+    const header = document.createElement('div');
+    header.className = 'bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 cursor-pointer hover:from-blue-700 hover:to-blue-800 flex items-center justify-between';
+    header.onclick = () => toggleArticle(article.id);
+    
+    header.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <i class="fas ${article.expanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xl"></i>
+        <i class="fas fa-newspaper text-xl"></i>
+        <h3 class="text-xl font-bold">${article.title}</h3>
+      </div>
+      <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
+        ${article.headings.length}個の見出し
+      </span>
+    `;
+    
+    articleCard.appendChild(header);
+    
+    // 見出しコンテナ
     if (article.expanded) {
-      article.headings.forEach((heading, hIdx) => {
-        const headingNode = {
-          id: `heading-${article.id}-${heading.id}`,
-          type: 'heading',
-          label: heading.text,
-          level: heading.level,
-          articleId: article.id,
-          headingId: heading.id,
-          headingText: heading.text
-        };
-        nodes.push(headingNode);
-        
-        // 記事と見出しを接続
-        linksData.push({
-          source: articleNode.id,
-          target: headingNode.id,
-          type: 'hierarchy'
+      const headingsContainer = document.createElement('div');
+      headingsContainer.className = 'p-4 bg-gray-50';
+      
+      if (article.headings.length === 0) {
+        headingsContainer.innerHTML = `
+          <p class="text-gray-500 italic">この記事には見出しがありません</p>
+        `;
+      } else {
+        article.headings.forEach((heading) => {
+          const headingDiv = document.createElement('div');
+          headingDiv.className = 'mb-3';
+          
+          // 見出しレベルに応じた色とインデント
+          const levelColors = {
+            1: 'bg-green-100 border-green-500 text-green-900',
+            2: 'bg-orange-100 border-orange-500 text-orange-900',
+            3: 'bg-purple-100 border-purple-500 text-purple-900',
+            4: 'bg-pink-100 border-pink-500 text-pink-900'
+          };
+          const color = levelColors[heading.level] || 'bg-gray-100 border-gray-500 text-gray-900';
+          const indent = (heading.level - 1) * 20;
+          
+          // 見出しカード（ドラッグ可能）
+          const headingCard = document.createElement('div');
+          headingCard.className = `${color} border-l-4 p-3 rounded-lg cursor-move hover:shadow-lg transition-all`;
+          headingCard.style.marginLeft = `${indent}px`;
+          headingCard.draggable = true;
+          
+          headingCard.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-grip-vertical text-gray-400"></i>
+                <span class="font-semibold">H${heading.level}</span>
+                <span class="font-bold">${heading.text}</span>
+              </div>
+              <i class="fas fa-link text-blue-600"></i>
+            </div>
+          `;
+          
+          // ドラッグイベント
+          headingCard.ondragstart = (e) => handleDragStart(e, article, heading);
+          headingCard.ondragover = (e) => handleDragOver(e);
+          headingCard.ondrop = (e) => handleDrop(e, article, heading);
+          headingCard.ondragend = (e) => handleDragEnd(e);
+          
+          headingDiv.appendChild(headingCard);
+          
+          // この見出しから出ているリンクを表示
+          const headingLinks = links.filter(link => 
+            link.from_article_id === article.id && 
+            link.from_heading === heading.text &&
+            link.is_active
+          );
+          
+          if (headingLinks.length > 0) {
+            const linksContainer = document.createElement('div');
+            linksContainer.className = 'ml-8 mt-2 space-y-2';
+            
+            headingLinks.forEach(link => {
+              const toArticle = articles.find(a => a.id === link.to_article_id);
+              const linkDiv = document.createElement('div');
+              linkDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-2 rounded flex items-center justify-between';
+              
+              linkDiv.innerHTML = `
+                <div class="flex items-center space-x-2">
+                  <i class="fas fa-arrow-right text-blue-600"></i>
+                  <span class="text-sm font-semibold text-blue-900">${link.link_text}</span>
+                  <i class="fas fa-arrow-right text-gray-400"></i>
+                  <span class="text-sm text-gray-700">${toArticle ? toArticle.title : '不明な記事'}</span>
+                  ${link.to_heading ? `<span class="text-xs text-gray-500">→ ${link.to_heading}</span>` : ''}
+                </div>
+                <button onclick="deleteLink(${link.id})" class="text-red-600 hover:text-red-800 px-2">
+                  <i class="fas fa-trash"></i>
+                </button>
+              `;
+              
+              linksContainer.appendChild(linkDiv);
+            });
+            
+            headingDiv.appendChild(linksContainer);
+          }
+          
+          headingsContainer.appendChild(headingDiv);
         });
-      });
-    }
-  });
-  
-  // 内部リンクを追加
-  links.forEach(link => {
-    if (link.is_active) {
-      const sourceId = `heading-${link.from_article_id}-${link.from_heading_id}`;
-      const targetId = link.to_heading_id 
-        ? `heading-${link.to_article_id}-${link.to_heading_id}`
-        : `article-${link.to_article_id}`;
-      
-      linksData.push({
-        source: sourceId,
-        target: targetId,
-        type: 'internal-link',
-        linkId: link.id,
-        linkText: link.link_text
-      });
-    }
-  });
-  
-  updateVisualization();
-}
-
-// ===================================
-// 可視化更新
-// ===================================
-function updateVisualization() {
-  // リンク描画
-  const link = linkLayer.selectAll('line')
-    .data(linksData, d => `${getNodeId(d.source)}-${getNodeId(d.target)}`);
-  
-  link.exit().remove();
-  
-  const linkEnter = link.enter().append('line')
-    .attr('stroke-width', d => d.type === 'internal-link' ? 4 : 2)
-    .attr('stroke', d => d.type === 'internal-link' ? '#3B82F6' : '#D1D5DB')
-    .attr('stroke-dasharray', d => d.type === 'hierarchy' ? '5,5' : '0')
-    .attr('marker-end', d => d.type === 'internal-link' ? 'url(#arrowhead)' : '')
-    .style('cursor', d => d.type === 'internal-link' ? 'pointer' : 'default')
-    .on('click', function(event, d) {
-      if (d.type === 'internal-link') {
-        event.stopPropagation();
-        if (confirm(`このリンクを削除しますか？\n「${d.linkText}」`)) {
-          deleteLink(d.linkId);
-        }
       }
-    });
-  
-  const linkUpdate = linkEnter.merge(link);
-  
-  // ノード描画
-  const node = nodeLayer.selectAll('g.node')
-    .data(nodes, d => d.id);
-  
-  node.exit().remove();
-  
-  const nodeEnter = node.enter().append('g')
-    .attr('class', 'node')
-    .call(d3.drag()
-      .on('start', dragStarted)
-      .on('drag', dragged)
-      .on('end', dragEnded));
-  
-  // 記事ノード
-  const articleNodes = nodeEnter.filter(d => d.type === 'article');
-  
-  articleNodes.append('rect')
-    .attr('width', 200)
-    .attr('height', 60)
-    .attr('x', -100)
-    .attr('y', -30)
-    .attr('rx', 10)
-    .attr('fill', '#3B82F6')
-    .attr('stroke', '#2563EB')
-    .attr('stroke-width', 3)
-    .style('cursor', 'pointer')
-    .on('click', function(event, d) {
-      event.stopPropagation();
-      toggleArticle(d.articleId);
-    });
-  
-  articleNodes.append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dy', 5)
-    .attr('fill', 'white')
-    .attr('font-size', '14px')
-    .attr('font-weight', 'bold')
-    .style('pointer-events', 'none')
-    .text(d => {
-      const maxLen = 20;
-      return d.label.length > maxLen ? d.label.substring(0, maxLen) + '...' : d.label;
-    });
-  
-  // 見出しノード
-  const headingNodes = nodeEnter.filter(d => d.type === 'heading');
-  
-  headingNodes.append('rect')
-    .attr('width', d => 150 + (d.level - 1) * 20)
-    .attr('height', 40)
-    .attr('x', d => -(75 + (d.level - 1) * 10))
-    .attr('y', -20)
-    .attr('rx', 8)
-    .attr('fill', d => {
-      const colors = ['#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
-      return colors[(d.level - 1) % colors.length];
-    })
-    .attr('stroke', '#374151')
-    .attr('stroke-width', 2)
-    .style('cursor', 'grab')
-    .on('mousedown', function(event, d) {
-      startDragLink(event, d);
-    });
-  
-  headingNodes.append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dy', 5)
-    .attr('fill', 'white')
-    .attr('font-size', '13px')
-    .attr('font-weight', 'bold')
-    .style('pointer-events', 'none')
-    .text(d => {
-      const maxLen = 18 - (d.level - 1) * 2;
-      return d.label.length > maxLen ? d.label.substring(0, maxLen) + '...' : d.label;
-    });
-  
-  const nodeUpdate = nodeEnter.merge(node);
-  
-  // Simulation
-  simulation.nodes(nodes)
-    .on('tick', () => {
-      linkUpdate
-        .attr('x1', d => getNode(d.source).x)
-        .attr('y1', d => getNode(d.source).y)
-        .attr('x2', d => getNode(d.target).x)
-        .attr('y2', d => getNode(d.target).y);
       
-      nodeUpdate.attr('transform', d => `translate(${d.x},${d.y})`);
-    });
-  
-  simulation.force('link').links(linksData.filter(l => l.type === 'hierarchy'));
-  
-  // 初回のみシミュレーション実行、その後すぐに停止
-  simulation.alpha(1).restart();
-  
-  // 3秒後に自動停止（初期レイアウト完了後）
-  setTimeout(() => {
-    simulation.stop();
-    console.log('🛑 Force simulation stopped - nodes are now static');
-  }, 3000);
-}
-
-// ===================================
-// ドラッグ操作
-// ===================================
-function dragStarted(event, d) {
-  // ドラッグ開始時はシミュレーションを再開させない（静的に保つ）
-  d.fx = d.x;
-  d.fy = d.y;
-}
-
-function dragged(event, d) {
-  d.fx = event.x;
-  d.fy = event.y;
-}
-
-function dragEnded(event, d) {
-  // ドラッグ終了時は固定位置を解除せず、そのまま固定
-  // d.fx と d.fy を保持して、ノードの位置を固定
-}
-
-// ===================================
-// リンクドラッグ
-// ===================================
-function startDragLink(event, sourceNode) {
-  if (sourceNode.type !== 'heading') return;
-  
-  event.stopPropagation();
-  dragSourceNode = sourceNode;
-  
-  const container = document.getElementById('mindmap-container');
-  const svg = container.querySelector('svg');
-  const mainGroup = svg.querySelector('g.main');
-  
-  dragLine = d3.select(mainGroup).append('line')
-    .attr('stroke', '#3B82F6')
-    .attr('stroke-width', 3)
-    .attr('stroke-dasharray', '5,5')
-    .style('pointer-events', 'none');
-  
-  const onMouseMove = (e) => {
-    const rect = container.getBoundingClientRect();
-    const transform = d3.zoomTransform(svg);
-    const x = (e.clientX - rect.left - transform.x) / transform.k;
-    const y = (e.clientY - rect.top - transform.y) / transform.k;
-    
-    dragLine
-      .attr('x1', sourceNode.x)
-      .attr('y1', sourceNode.y)
-      .attr('x2', x)
-      .attr('y2', y);
-  };
-  
-  const onMouseUp = (e) => {
-    container.removeEventListener('mousemove', onMouseMove);
-    container.removeEventListener('mouseup', onMouseUp);
-    
-    if (dragLine) {
-      dragLine.remove();
-      dragLine = null;
+      articleCard.appendChild(headingsContainer);
     }
     
-    const rect = container.getBoundingClientRect();
-    const transform = d3.zoomTransform(svg);
-    const x = (e.clientX - rect.left - transform.x) / transform.k;
-    const y = (e.clientY - rect.top - transform.y) / transform.k;
-    
-    const targetNode = findNodeAtPosition(x, y);
-    
-    if (targetNode && targetNode.id !== dragSourceNode.id) {
-      if (targetNode.type === 'heading' || targetNode.type === 'article') {
-        if (dragSourceNode.articleId !== targetNode.articleId) {
-          showLinkModal(dragSourceNode, targetNode);
-        } else {
-          alert('同じ記事内の見出しへのリンクは作成できません');
-        }
-      }
-    }
-    
-    dragSourceNode = null;
-  };
-  
-  container.addEventListener('mousemove', onMouseMove);
-  container.addEventListener('mouseup', onMouseUp);
+    container.appendChild(articleCard);
+  });
 }
 
-function findNodeAtPosition(x, y) {
-  const threshold = 50;
-  for (const node of nodes) {
-    const distance = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-    if (distance < threshold) {
-      return node;
-    }
+// ===================================
+// ドラッグ&ドロップ処理
+// ===================================
+function handleDragStart(e, article, heading) {
+  dragSourceHeading = { article, heading };
+  e.target.style.opacity = '0.5';
+  e.dataTransfer.effectAllowed = 'link';
+  e.dataTransfer.setData('text/html', e.target.innerHTML);
+  console.log('🎯 Drag started:', heading.text);
+}
+
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
   }
-  return null;
+  e.dataTransfer.dropEffect = 'link';
+  e.target.closest('.cursor-move')?.classList.add('ring-4', 'ring-blue-400');
+  return false;
+}
+
+function handleDrop(e, targetArticle, targetHeading) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  e.preventDefault();
+  
+  e.target.closest('.cursor-move')?.classList.remove('ring-4', 'ring-blue-400');
+  
+  if (!dragSourceHeading) return false;
+  
+  // 同じ見出しへのドロップは無視
+  if (dragSourceHeading.article.id === targetArticle.id && 
+      dragSourceHeading.heading.id === targetHeading.id) {
+    console.log('⚠️ Cannot link to same heading');
+    return false;
+  }
+  
+  // 同じ記事内のリンクは禁止
+  if (dragSourceHeading.article.id === targetArticle.id) {
+    alert('⚠️ 同じ記事内の見出しへのリンクは作成できません');
+    return false;
+  }
+  
+  console.log('🎯 Dropped:', {
+    from: dragSourceHeading.heading.text,
+    to: targetHeading.text
+  });
+  
+  showLinkModal(dragSourceHeading, { article: targetArticle, heading: targetHeading });
+  
+  return false;
+}
+
+function handleDragEnd(e) {
+  e.target.style.opacity = '1';
+  e.target.closest('.cursor-move')?.classList.remove('ring-4', 'ring-blue-400');
+  dragSourceHeading = null;
 }
 
 // ===================================
 // リンク作成モーダル
 // ===================================
-function showLinkModal(sourceNode, targetNode) {
-  const fromArticle = articles.find(a => a.id === sourceNode.articleId);
-  const toArticle = articles.find(a => a.id === targetNode.articleId);
-  
+function showLinkModal(source, target) {
   document.getElementById('modal-from').textContent = 
-    `${fromArticle.title} > ${sourceNode.label}`;
+    `${source.article.title} > ${source.heading.text}`;
   
   document.getElementById('modal-to').textContent = 
-    targetNode.type === 'heading' 
-      ? `${toArticle.title} > ${targetNode.label}`
-      : toArticle.title;
+    `${target.article.title} > ${target.heading.text}`;
   
   document.getElementById('modal-link-text').value = 
-    `${toArticle.title}について詳しく見る`;
+    `${target.article.title}について詳しく見る`;
   
   document.getElementById('link-modal').classList.remove('hidden');
   
-  window.pendingLink = { sourceNode, targetNode };
+  window.pendingLink = { source, target };
 }
 
 function closeLinkModal() {
@@ -537,7 +379,7 @@ function closeLinkModal() {
 async function confirmCreateLink() {
   if (!window.pendingLink) return;
   
-  const { sourceNode, targetNode } = window.pendingLink;
+  const { source, target } = window.pendingLink;
   const linkText = document.getElementById('modal-link-text').value.trim();
   
   if (!linkText) {
@@ -553,12 +395,12 @@ async function confirmCreateLink() {
         'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
-        from_article_id: sourceNode.articleId,
-        from_heading: sourceNode.headingText,
-        from_heading_id: sourceNode.headingId,
-        to_article_id: targetNode.articleId,
-        to_heading: targetNode.type === 'heading' ? targetNode.headingText : null,
-        to_heading_id: targetNode.type === 'heading' ? targetNode.headingId : null,
+        from_article_id: source.article.id,
+        from_heading: source.heading.text,
+        from_heading_id: source.heading.id,
+        to_article_id: target.article.id,
+        to_heading: target.heading.text,
+        to_heading_id: target.heading.id,
         link_text: linkText,
         is_active: 1
       })
@@ -587,40 +429,22 @@ function toggleArticle(articleId) {
   }
 }
 
+function expandAllArticles() {
+  articles.forEach(article => article.expanded = true);
+  renderMindMap();
+}
+
+function collapseAllArticles() {
+  articles.forEach(article => article.expanded = false);
+  renderMindMap();
+}
+
 // ===================================
 // ユーティリティ
 // ===================================
-function getNodeId(node) {
-  return typeof node === 'object' ? node.id : node;
-}
-
-function getNode(node) {
-  if (typeof node === 'object') return node;
-  return nodes.find(n => n.id === node) || { x: 0, y: 0 };
-}
-
 async function refreshMindMap() {
   await loadMindMapData();
   alert('✅ 更新しました');
-}
-
-function resetLayout() {
-  // すべてのノードの固定を解除
-  nodes.forEach(node => {
-    node.fx = null;
-    node.fy = null;
-  });
-  
-  // シミュレーションを再開
-  simulation.alpha(1).restart();
-  
-  // 3秒後に再度停止
-  setTimeout(() => {
-    simulation.stop();
-    console.log('🛑 Force simulation stopped after reset');
-  }, 3000);
-  
-  alert('✅ 自動整列を実行中...');
 }
 
 async function clearAllLinks() {
@@ -641,6 +465,8 @@ async function clearAllLinks() {
 }
 
 async function deleteLink(linkId) {
+  if (!confirm('このリンクを削除しますか？')) return;
+  
   try {
     const response = await fetch(`/api/internal-links/${linkId}`, {
       method: 'DELETE',
@@ -658,9 +484,11 @@ async function deleteLink(linkId) {
 // グローバル登録
 window.showInternalLinks = showInternalLinks;
 window.refreshMindMap = refreshMindMap;
-window.resetLayout = resetLayout;
+window.expandAllArticles = expandAllArticles;
+window.collapseAllArticles = collapseAllArticles;
 window.clearAllLinks = clearAllLinks;
+window.deleteLink = deleteLink;
 window.closeLinkModal = closeLinkModal;
 window.confirmCreateLink = confirmCreateLink;
 
-console.log('✅ Mind Map Internal Links Module Loaded!');
+console.log('✅ Toggle Mind Map Internal Links Module Loaded!');
