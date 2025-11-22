@@ -14,6 +14,8 @@ let contentFlow = {
   seo_title: '',
   meta_description: '',
   target_keywords: '',
+  max_chars: 3000,
+  tone: 'professional',
   step: 'keyword' // keyword, outline, article, rewrite
 };
 
@@ -432,15 +434,18 @@ function renderCurrentStep() {
             <input 
               type="number" 
               id="max-chars" 
-              value="3000" 
+              value="${contentFlow.max_chars}" 
+              min="500"
+              max="10000"
+              step="100"
               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
           </div>
           <div>
             <label class="block text-gray-700 text-sm font-bold mb-2">トーン</label>
             <select id="tone" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-              <option value="professional">プロフェッショナル</option>
-              <option value="casual">カジュアル</option>
-              <option value="friendly">フレンドリー</option>
+              <option value="professional" ${contentFlow.tone === 'professional' ? 'selected' : ''}>プロフェッショナル</option>
+              <option value="casual" ${contentFlow.tone === 'casual' ? 'selected' : ''}>カジュアル</option>
+              <option value="friendly" ${contentFlow.tone === 'friendly' ? 'selected' : ''}>フレンドリー</option>
             </select>
           </div>
         </div>
@@ -692,6 +697,8 @@ async function generateOutline() {
   }
   
   contentFlow.keyword = keyword;
+  contentFlow.max_chars = maxChars;
+  contentFlow.tone = tone;
   
   // ローディング表示
   document.getElementById('content-flow-area').innerHTML = `
@@ -763,7 +770,11 @@ async function generateArticle() {
       },
       body: JSON.stringify({
         keyword: contentFlow.keyword,
-        outline: contentFlow.outline
+        outline: contentFlow.outline,
+        params: {
+          max_chars: contentFlow.max_chars,
+          tone: contentFlow.tone
+        }
       })
     });
     
@@ -817,7 +828,11 @@ async function rewriteArticle() {
       },
       body: JSON.stringify({
         keyword: contentFlow.keyword,
-        original_content: currentArticle
+        original_content: currentArticle,
+        params: {
+          max_chars: contentFlow.max_chars,
+          tone: contentFlow.tone
+        }
       })
     });
     

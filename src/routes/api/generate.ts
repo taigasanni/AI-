@@ -262,7 +262,7 @@ generate.post('/article', async (c) => {
 generate.post('/rewrite', async (c) => {
   try {
     const user = c.get('user');
-    const { keyword, original_content, instructions } = await c.req.json();
+    const { keyword, original_content, instructions, params } = await c.req.json();
 
     if (!original_content) {
       return c.json<APIResponse>({
@@ -283,6 +283,9 @@ generate.post('/rewrite', async (c) => {
 
     console.log(`Using AI provider: ${provider}, model: ${modelName}`);
 
+    const maxChars = params?.max_chars || 3000;
+    const tone = params?.tone || 'professional';
+
     // リライトプロンプト
     const rewritePrompt = `あなたはプロのWebライター・編集者です。
 以下の記事をより読みやすく、SEOに最適化された内容にリライトしてください。
@@ -290,6 +293,11 @@ generate.post('/rewrite', async (c) => {
 ${keyword ? `キーワード: ${keyword}` : ''}
 
 ${instructions ? `リライト指示: ${instructions}` : ''}
+
+【文字数制約】
+⚠️ リライト後の記事は必ず ${maxChars} 文字程度（±10%以内）にしてください。
+- 目標文字数: ${maxChars} 文字
+- 文体: ${tone}
 
 元の記事:
 ${original_content}
@@ -300,6 +308,7 @@ ${original_content}
 - SEOを意識しつつ、自然な文章にする
 - 文章構造を改善し、段落を最適化
 - Markdown形式で出力
+- 文字数 ${maxChars} を必ず守る
 
 リライト後の記事:`;
 
