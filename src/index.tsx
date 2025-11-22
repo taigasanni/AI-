@@ -12,6 +12,7 @@ import settings from './routes/api/settings'
 import prompts from './routes/api/prompts'
 import reference from './routes/api/reference'
 import models from './routes/api/models'
+import decoration from './routes/api/decoration'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -40,6 +41,7 @@ app.route('/api/settings', settings)
 app.route('/api/prompts', prompts)
 app.route('/api/reference', reference)
 app.route('/api/models', models)
+app.route('/api/decoration-template', decoration)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
@@ -64,6 +66,8 @@ app.get('/admin', (c) => {
         <!-- Quill.js リッチテキストエディター -->
         <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
         <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+        <!-- Markdown Preview Styles -->
+        <link href="/static/markdown-preview.css" rel="stylesheet">
         <style>
           .sidebar-link:hover {
             background-color: rgba(59, 130, 246, 0.1);

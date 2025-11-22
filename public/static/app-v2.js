@@ -1185,6 +1185,9 @@ async function showSettings() {
           <button onclick="switchSettingsTab('models')" id="settings-tab-models" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
             <i class="fas fa-brain mr-2"></i>AIモデル
           </button>
+          <button onclick="switchSettingsTab('decoration')" id="settings-tab-decoration" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-paint-brush mr-2"></i>装飾
+          </button>
           <button onclick="switchSettingsTab('user-info')" id="settings-tab-user-info" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
             <i class="fas fa-user mr-2"></i>ユーザー情報
           </button>
@@ -1282,6 +1285,48 @@ async function showSettings() {
           </div>
         </div>
 
+        <!-- 装飾テンプレートタブ -->
+        <div id="settings-content-decoration" class="settings-tab-content hidden">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-paint-brush mr-2"></i>装飾テンプレート
+          </h2>
+          <p class="text-sm text-gray-600 mb-4">
+            記事生成時に使用する装飾ルール（箇条書き、マーカー、ボックス、表など）をカスタマイズできます。
+          </p>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-blue-800 text-sm">
+              <i class="fas fa-info-circle mr-2"></i>
+              <strong>装飾テンプレートについて</strong><br>
+              記事生成時にAIがこのテンプレートを参照し、箇条書き・太字・ボックスなどを適切に使用した読みやすい記事を作成します。
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">テンプレート内容</label>
+            <textarea id="decoration-template" rows="20" 
+                      class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
+                      placeholder="装飾ルールをMarkdown形式で記述..."></textarea>
+            <p class="text-xs text-gray-500 mt-2">
+              ※ 箇条書き、太字、ボックス（引用）、表などのMarkdown記法の使用例を記載してください
+            </p>
+          </div>
+          
+          <div class="flex gap-3">
+            <button onclick="loadDecorationTemplate()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+              <i class="fas fa-sync-alt mr-2"></i>再読み込み
+            </button>
+            <button onclick="saveDecorationTemplate()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+              <i class="fas fa-save mr-2"></i>保存
+            </button>
+            <button onclick="resetDecorationTemplate()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700">
+              <i class="fas fa-undo mr-2"></i>デフォルトに戻す
+            </button>
+          </div>
+          
+          <div id="decoration-status" class="mt-4"></div>
+        </div>
+
         <!-- ユーザー情報タブ -->
         <div id="settings-content-user-info" class="settings-tab-content hidden">
           <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -1341,6 +1386,8 @@ function switchSettingsTab(tab) {
         modelsSection.innerHTML = html;
       }
     });
+  } else if (tab === 'decoration') {
+    loadDecorationTemplate();
   }
 }
 
@@ -2724,6 +2771,112 @@ function showToast(message, type = 'success') {
 }
 
 // 古いprocessAIAssist関数とapplyAIAssistResult関数は削除済み（チャット形式に置き換え）
+
+// ===================================
+// 装飾テンプレート管理
+// ===================================
+
+// 装飾テンプレートを読み込む
+async function loadDecorationTemplate() {
+  try {
+    const response = await fetch(`${API_BASE}/decoration-template`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      document.getElementById('decoration-template').value = data.data.template_content || '';
+    } else {
+      console.log('装飾テンプレートが見つかりません');
+    }
+  } catch (error) {
+    console.error('Load decoration template error:', error);
+  }
+}
+
+// 装飾テンプレートを保存する
+async function saveDecorationTemplate() {
+  const templateContent = document.getElementById('decoration-template').value;
+  
+  if (!templateContent) {
+    alert('テンプレート内容を入力してください');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/decoration-template`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        template_content: templateContent
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const statusDiv = document.getElementById('decoration-status');
+      statusDiv.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle mr-1"></i>装飾テンプレートを保存しました</p>';
+      setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+    } else {
+      alert(data.error || '保存に失敗しました');
+    }
+  } catch (error) {
+    console.error('Save decoration template error:', error);
+    alert('保存に失敗しました');
+  }
+}
+
+// デフォルトテンプレートに戻す
+async function resetDecorationTemplate() {
+  if (!confirm('デフォルトテンプレートに戻しますか？\n現在の内容は失われます。')) {
+    return;
+  }
+  
+  const defaultTemplate = `# Markdown装飾ルール
+
+## 1. 箇条書き（リスト）
+重要なポイントを列挙する際は箇条書きを使用：
+
+- ポイント1
+- ポイント2
+- ポイント3
+
+## 2. 重要な文章のマーカー（強調）
+重要な部分は**太字**で強調
+
+## 3. ボックス（引用）
+注意点や補足情報はボックスで囲む：
+
+> 💡 **ポイント**
+> ここに重要な補足情報を記載します。
+
+> ⚠️ **注意**
+> 注意すべき内容を記載します。
+
+> ✅ **メリット**
+> メリットや利点を記載します。
+
+## 4. 表（テーブル）
+比較や整理には表を使用：
+
+| 項目 | 内容 | 備考 |
+|------|------|------|
+| 項目1 | 説明1 | 補足1 |
+| 項目2 | 説明2 | 補足2 |`;
+
+  document.getElementById('decoration-template').value = defaultTemplate;
+  
+  const statusDiv = document.getElementById('decoration-status');
+  statusDiv.innerHTML = '<p class="text-blue-600 text-sm"><i class="fas fa-info-circle mr-1"></i>デフォルトテンプレートを読み込みました。「保存」ボタンで確定してください。</p>';
+  setTimeout(() => { statusDiv.innerHTML = ''; }, 5000);
+}
 
 // 初期化時にテキスト選択機能を有効化
 document.addEventListener('DOMContentLoaded', () => {
