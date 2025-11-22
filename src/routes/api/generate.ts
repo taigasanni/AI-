@@ -253,4 +253,105 @@ generate.post('/article', async (c) => {
   }
 });
 
+/**
+ * POST /api/generate/rewrite - 記事リライト
+ */
+generate.post('/rewrite', async (c) => {
+  try {
+    const user = c.get('user');
+    const { keyword, original_content, instructions } = await c.req.json();
+
+    if (!original_content) {
+      return c.json<APIResponse>({
+        success: false,
+        error: 'Original content is required'
+      }, 400);
+    }
+
+    // ユーザーのOpenAI APIキーを取得
+    const apiKeyResult = await c.env.DB.prepare(
+      'SELECT api_key FROM api_settings WHERE user_id = ? AND provider = ? AND is_active = 1'
+    ).bind(user.userId, 'openai').first<{ api_key: string }>();
+
+    // フォールバック: 環境変数のAPIキー
+    const apiKey = apiKeyResult?.api_key || c.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      return c.json<APIResponse>({
+        success: false,
+        error: 'OpenAI API key not configured. Please set your API key in Settings.'
+      }, 400);
+    }
+
+    // リライトプロンプト
+    const rewritePrompt = `あなたはプロのWebライター・編集者です。
+以下の記事をより読みやすく、SEOに最適化された内容にリライトしてください。
+
+${keyword ? `キーワード: ${keyword}` : ''}
+
+${instructions ? `リライト指示: ${instructions}` : ''}
+
+元の記事:
+${original_content}
+
+要件:
+- 元の記事の主要なポイントと情報は保持する
+- より読みやすく、魅力的な文章に改善
+- SEOを意識しつつ、自然な文章にする
+- 文章構造を改善し、段落を最適化
+- Markdown形式で出力
+
+リライト後の記事:`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional web content editor and SEO specialist.'
+          },
+          {
+            role: 'user',
+            content: rewritePrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
+      return c.json<APIResponse>({
+        success: false,
+        error: 'Failed to rewrite article'
+      }, 500);
+    }
+
+    const data = await response.json();
+    const rewrittenArticle = data.choices[0]?.message?.content || '';
+
+    return c.json<APIResponse>({
+      success: true,
+      data: {
+        content: rewrittenArticle
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Rewrite error:', error);
+    return c.json<APIResponse>({
+      success: false,
+      error: 'Failed to rewrite article'
+    }, 500);
+  }
+});
+
 export default generate;

@@ -5,6 +5,8 @@ import type { Env } from './types'
 
 // API Routes
 import auth from './routes/api/auth'
+import projects from './routes/api/projects'
+import keywords from './routes/api/keywords'
 import articles from './routes/api/articles'
 import generate from './routes/api/generate'
 import settings from './routes/api/settings'
@@ -23,6 +25,8 @@ app.use('/static/*', serveStatic({ root: './public' }))
 
 // APIルート
 app.route('/api/auth', auth)
+app.route('/api/projects', projects)
+app.route('/api/keywords', keywords)
 app.route('/api/articles', articles)
 app.route('/api/generate', generate)
 app.route('/api/settings', settings)
@@ -44,7 +48,7 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AI Blog CMS</title>
+        <title>AI自動ブログ投稿CMS</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -64,7 +68,7 @@ app.get('/', (c) => {
                 <div class="text-center mb-8">
                     <i class="fas fa-robot text-5xl text-blue-600 mb-4"></i>
                     <h1 class="text-3xl font-bold text-gray-800">AI Blog CMS</h1>
-                    <p class="text-gray-600 mt-2">シンプルなAIブログ管理システム</p>
+                    <p class="text-gray-600 mt-2">AI自動ブログ投稿システム</p>
                 </div>
                 
                 <div id="login-form">
@@ -121,20 +125,28 @@ app.get('/', (c) => {
                     <p class="text-sm text-gray-600 mt-1" id="user-info"></p>
                 </div>
                 <nav class="p-4">
-                    <a href="#" onclick="showContentCreation()" data-page="content" class="sidebar-link active flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
-                        <i class="fas fa-edit w-6"></i>
-                        <span>コンテンツ作成</span>
+                    <a href="#" onclick="showDashboard()" class="sidebar-link active flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-home w-6"></i>
+                        <span>ダッシュボード</span>
                     </a>
-                    <a href="#" onclick="showArticleList()" data-page="articles" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                    <a href="#" onclick="showProjects()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-folder w-6"></i>
+                        <span>プロジェクト</span>
+                    </a>
+                    <a href="#" onclick="showKeywords()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-key w-6"></i>
+                        <span>キーワード</span>
+                    </a>
+                    <a href="#" onclick="showArticles()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-file-alt w-6"></i>
-                        <span>記事一覧</span>
+                        <span>記事管理</span>
                     </a>
-                    <a href="#" onclick="showInternalLinks()" data-page="links" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
-                        <i class="fas fa-link w-6"></i>
-                        <span>内部リンク管理</span>
+                    <a href="#" onclick="showGenerate()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-magic w-6"></i>
+                        <span>AI記事生成</span>
                     </a>
                     <div class="border-t my-4"></div>
-                    <a href="#" onclick="showSettings()" data-page="settings" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                    <a href="#" onclick="showSettings()" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-cog w-6"></i>
                         <span>設定</span>
                     </a>
@@ -146,13 +158,64 @@ app.get('/', (c) => {
             </aside>
 
             <!-- メインコンテンツ -->
-            <main class="flex-1 p-8 overflow-auto bg-gray-50">
-                <div id="content-area"></div>
+            <main class="flex-1 p-8 overflow-auto">
+                <div id="content-area">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6">ダッシュボード</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-600 text-sm">プロジェクト数</p>
+                                    <p class="text-3xl font-bold text-blue-600" id="project-count">0</p>
+                                </div>
+                                <i class="fas fa-folder text-4xl text-blue-200"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-600 text-sm">総記事数</p>
+                                    <p class="text-3xl font-bold text-green-600" id="article-count">0</p>
+                                </div>
+                                <i class="fas fa-file-alt text-4xl text-green-200"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-600 text-sm">キーワード数</p>
+                                    <p class="text-3xl font-bold text-purple-600" id="keyword-count">0</p>
+                                </div>
+                                <i class="fas fa-key text-4xl text-purple-200"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 bg-white p-6 rounded-lg shadow">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">クイックスタート</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onclick="showProjects()" class="flex items-center p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition">
+                                <i class="fas fa-plus-circle text-3xl text-blue-600 mr-4"></i>
+                                <div class="text-left">
+                                    <p class="font-bold text-gray-800">新規プロジェクト作成</p>
+                                    <p class="text-sm text-gray-600">サイト・メディアを追加</p>
+                                </div>
+                            </button>
+                            <button onclick="showGenerate()" class="flex items-center p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition">
+                                <i class="fas fa-magic text-3xl text-green-600 mr-4"></i>
+                                <div class="text-left">
+                                    <p class="font-bold text-gray-800">AI記事生成</p>
+                                    <p class="text-sm text-gray-600">キーワードから記事を生成</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app-v2.js"></script>
+        <script src="/static/app.js"></script>
     </body>
     </html>
   `)
