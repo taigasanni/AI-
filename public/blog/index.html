@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブログ - AI Blog CMS</title>
+    <meta name="description" content="AI技術を活用した高品質なブログ記事をお届けします">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/blog-styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/blog" class="flex items-center space-x-2">
+                    <i class="fas fa-blog text-3xl text-blue-600"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">My Blog</h1>
+                </a>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="/blog" class="text-gray-700 hover:text-blue-600 transition">
+                        <i class="fas fa-home mr-1"></i>ホーム
+                    </a>
+                    <a href="/blog#articles" class="text-gray-700 hover:text-blue-600 transition">
+                        <i class="fas fa-newspaper mr-1"></i>記事一覧
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- ヒーローセクション -->
+        <section class="mb-12 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Welcome to My Blog
+            </h2>
+            <p class="text-xl text-gray-600 mb-8">
+                AI技術を活用した高品質なコンテンツをお届けします
+            </p>
+        </section>
+
+        <!-- 記事一覧 -->
+        <section id="articles" class="mb-12">
+            <h3 class="text-3xl font-bold text-gray-900 mb-8 flex items-center">
+                <i class="fas fa-newspaper text-blue-600 mr-3"></i>
+                最新記事
+            </h3>
+            
+            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- ローディング表示 -->
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
+                    <p class="text-gray-600 text-lg">記事を読み込み中...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-gray-400">
+                <i class="fas fa-copyright mr-1"></i>
+                2024 My Blog. Powered by AI Blog CMS.
+            </p>
+            <div class="mt-4 space-x-4">
+                <a href="#" class="text-gray-400 hover:text-white transition">
+                    <i class="fab fa-twitter text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white transition">
+                    <i class="fab fa-facebook text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white transition">
+                    <i class="fab fa-github text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/blog-script.js"></script>
+</body>
+</html>

@@ -8,10 +8,103 @@ import type { Env } from '../types';
 const publicRoutes = new Hono<{ Bindings: Env }>();
 
 /**
- * GET / - トップページ（管理画面へリダイレクト）
+ * GET / - トップページ（ブログ一覧を表示）
  */
-publicRoutes.get('/', (c) => {
-  return c.redirect('/admin');
+publicRoutes.get('/', async (c) => {
+  // 全ユーザーの公開記事を表示
+  const articles = await c.env.DB.prepare(
+    `SELECT a.id, a.title, a.meta_description, a.content, a.target_keywords, 
+            a.published_at, a.created_at, u.name as author_name
+     FROM articles a 
+     JOIN users u ON a.user_id = u.id 
+     WHERE a.status = 'published'
+     ORDER BY a.published_at DESC, a.created_at DESC
+     LIMIT 20`
+  ).all();
+
+  const articlesList = articles.results || [];
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ブログ - AI Blog CMS</title>
+        <meta name="description" content="AI Blog CMSで作成された記事一覧">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <header class="bg-white shadow">
+            <div class="max-w-6xl mx-auto px-4 py-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        <i class="fas fa-blog mr-2 text-blue-600"></i>ブログ
+                    </h1>
+                    <a href="/admin" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-user-shield mr-1"></i>管理画面
+                    </a>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-6xl mx-auto px-4 py-8">
+            ${articlesList.length === 0 ? `
+                <div class="text-center py-16">
+                    <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-600 mb-2">まだ記事がありません</h2>
+                    <p class="text-gray-500">公開された記事がここに表示されます</p>
+                </div>
+            ` : `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${articlesList.map((article: any) => `
+                        <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
+                            <div class="p-6">
+                                <h2 class="text-xl font-bold text-gray-800 mb-3 line-clamp-2">
+                                    ${article.title}
+                                </h2>
+                                <p class="text-gray-600 text-sm mb-4 line-clamp-3">
+                                    ${article.meta_description || article.content?.substring(0, 150) || ''}...
+                                </p>
+                                <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                                    <span>
+                                        <i class="far fa-calendar mr-1"></i>
+                                        ${new Date(article.published_at || article.created_at).toLocaleDateString('ja-JP')}
+                                    </span>
+                                    <span>
+                                        <i class="far fa-user mr-1"></i>
+                                        ${article.author_name}
+                                    </span>
+                                </div>
+                                ${article.target_keywords ? `
+                                    <div class="mb-4">
+                                        ${article.target_keywords.split(',').slice(0, 3).map((kw: string) => `
+                                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2 mb-2">
+                                                ${kw.trim()}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                <a href="/blog/${article.id}" 
+                                   class="block text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-arrow-right mr-2"></i>続きを読む
+                                </a>
+                            </div>
+                        </article>
+                    `).join('')}
+                </div>
+            `}
+        </main>
+        
+        <footer class="bg-white border-t mt-16">
+            <div class="max-w-6xl mx-auto px-4 py-6 text-center text-gray-600">
+                <p>Powered by AI Blog CMS</p>
+            </div>
+        </footer>
+    </body>
+    </html>
+  `);
 });
 
 /**
