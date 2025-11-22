@@ -86,7 +86,9 @@ publicArticlesApi.get('/:id', async (c) => {
       `SELECT 
         il.*,
         fa.slug as from_article_slug,
-        fa.title as from_article_title
+        fa.title as from_article_title,
+        fa.meta_description as from_article_description,
+        fa.published_at as from_article_published_at
        FROM internal_links il
        JOIN articles fa ON il.from_article_id = fa.id
        WHERE il.to_article_id = ? AND il.is_active = 1
@@ -125,11 +127,15 @@ publicArticlesApi.get('/:id', async (c) => {
 /**
  * Markdown本文に内部リンクを挿入する関数
  * この記事がリンク先（to_article）となっているリンクを、
- * 指定された見出し（to_heading）の下に挿入する
+ * 指定された見出し（to_heading）の下にブログカード形式で挿入する
  */
 function insertInternalLinks(content: string, links: any[]): string {
   const lines = content.split('\n');
   const processedLines: string[] = [];
+  
+  // 見出しの直後のテキスト行を追跡
+  let lastHeadingIndex = -1;
+  let foundContentAfterHeading = false;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -139,35 +145,55 @@ function insertInternalLinks(content: string, links: any[]): string {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     
     if (headingMatch) {
+      lastHeadingIndex = i;
+      foundContentAfterHeading = false;
       const headingText = headingMatch[2].trim();
       
       // この見出し（to_heading）に対応する内部リンクを検索
       const matchingLinks = links.filter(link => {
-        // to_headingが指定されている場合はそれに一致するもの
         if (link.to_heading) {
           return link.to_heading === headingText;
         }
-        // to_headingが指定されていない場合は最初の見出しに表示
         return false;
       });
       
+      // 一時的にリンク情報を保存（次の行で挿入）
       if (matchingLinks.length > 0) {
-        // 見出しの直後に空行を追加
+        processedLines[processedLines.length - 1] = {
+          type: 'heading',
+          content: line,
+          links: matchingLinks
+        } as any;
+      }
+    } else if (lastHeadingIndex >= 0 && !foundContentAfterHeading && line.trim() !== '') {
+      // 見出しの直後の最初のコンテンツ行
+      foundContentAfterHeading = true;
+      
+      // 前の行が見出しでリンクがある場合
+      const prevLine = processedLines[processedLines.length - 2];
+      if (prevLine && typeof prevLine === 'object' && (prevLine as any).type === 'heading') {
+        const headingObj = prevLine as any;
+        processedLines[processedLines.length - 2] = headingObj.content;
+        
+        // 空行を追加
         processedLines.push('');
         
-        // 内部リンクを挿入（リンク元の記事へのリンク）
-        matchingLinks.forEach(link => {
-          const linkUrl = link.from_heading_id 
-            ? `/blog/${link.from_article_slug}#${link.from_heading_id}`
-            : `/blog/${link.from_article_slug}`;
-          
-          const linkMarkdown = `[${link.link_text}](${linkUrl})`;
-          processedLines.push(`> 🔗 **関連記事:** ${linkMarkdown}`);
+        // ブログカードを挿入
+        headingObj.links.forEach((link: any) => {
+          const blogCard = generateBlogCard(link);
+          processedLines.push(blogCard);
         });
         
-        // リンクの後に空行を追加
+        // 空行を追加
         processedLines.push('');
       }
+    }
+  }
+  
+  // オブジェクトとして残っている見出し行を文字列に戻す
+  for (let i = 0; i < processedLines.length; i++) {
+    if (typeof processedLines[i] === 'object') {
+      processedLines[i] = (processedLines[i] as any).content;
     }
   }
   
@@ -176,18 +202,68 @@ function insertInternalLinks(content: string, links: any[]): string {
   if (articleLevelLinks.length > 0) {
     const linkLines: string[] = [''];
     articleLevelLinks.forEach(link => {
-      const linkUrl = link.from_heading_id 
-        ? `/blog/${link.from_article_slug}#${link.from_heading_id}`
-        : `/blog/${link.from_article_slug}`;
-      
-      const linkMarkdown = `[${link.link_text}](${linkUrl})`;
-      linkLines.push(`> 🔗 **関連記事:** ${linkMarkdown}`);
+      const blogCard = generateBlogCard(link);
+      linkLines.push(blogCard);
+      linkLines.push('');
     });
-    linkLines.push('');
     processedLines.unshift(...linkLines);
   }
   
   return processedLines.join('\n');
+}
+
+/**
+ * ブログカードHTMLを生成する関数
+ */
+function generateBlogCard(link: any): string {
+  const linkUrl = link.from_heading_id 
+    ? `/blog/${link.from_article_slug}#${link.from_heading_id}`
+    : `/blog/${link.from_article_slug}`;
+  
+  const description = link.from_article_description || 'この記事で詳しく解説しています。';
+  const publishedDate = link.from_article_published_at 
+    ? new Date(link.from_article_published_at).toLocaleDateString('ja-JP')
+    : '';
+  
+  return `
+<div class="blog-card-wrapper" style="margin: 2rem 0;">
+  <a href="${linkUrl}" class="blog-card" style="display: block; text-decoration: none; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <div class="blog-card-content" style="padding: 1.5rem; background: white; margin: 3px; border-radius: 10px;">
+      <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
+        <span style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; margin-right: 0.5rem;">🔗 関連記事</span>
+        ${publishedDate ? `<span style="color: #9ca3af; font-size: 0.875rem;">${publishedDate}</span>` : ''}
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: bold; color: #1f2937; margin-bottom: 0.5rem; line-height: 1.4;">${link.from_article_title}</h3>
+      <p style="color: #6b7280; font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">${description}</p>
+      <div style="display: flex; align-items: center; color: #667eea; font-weight: 600; font-size: 0.875rem;">
+        <span>${link.link_text}</span>
+        <svg style="width: 1rem; height: 1rem; margin-left: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </div>
+    </div>
+  </a>
+</div>
+
+<style>
+  .blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(102, 126, 234, 0.3) !important;
+  }
+  
+  @media (max-width: 768px) {
+    .blog-card-wrapper {
+      margin: 1.5rem 0 !important;
+    }
+    .blog-card-content {
+      padding: 1rem !important;
+    }
+    .blog-card-content h3 {
+      font-size: 1.125rem !important;
+    }
+  }
+</style>
+`.trim();
 }
 
 export default publicArticlesApi;
