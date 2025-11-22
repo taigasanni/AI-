@@ -77,9 +77,12 @@ function displayArticle(article) {
   const container = document.getElementById('article-container');
   
   // Markdownをパース
+  // IMPORTANT: mangle: false, headerIds: false でHTMLタグをそのまま残す
   marked.setOptions({
     breaks: true,
-    gfm: true
+    gfm: true,
+    mangle: false,
+    headerIds: false
   });
   
   const htmlContent = marked.parse(article.content);
