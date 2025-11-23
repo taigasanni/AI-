@@ -953,10 +953,16 @@ function backToOutline() {
   renderCurrentStep();
 }
 
-function copyToClipboard() {
-  const content = document.getElementById('article-edit').value;
-  navigator.clipboard.writeText(content).then(() => {
-    alert('クリップボードにコピーしました');
+function copyToClipboard(text) {
+  // テキストが渡された場合はそれをコピー、なければ記事編集エリアの内容をコピー
+  const contentToCopy = text || document.getElementById('article-edit')?.value || '';
+  
+  navigator.clipboard.writeText(contentToCopy).then(() => {
+    if (text) {
+      showToast('📋 URLをコピーしました', 'success');
+    } else {
+      alert('クリップボードにコピーしました');
+    }
   }).catch(() => {
     alert('コピーに失敗しました');
   });
@@ -1015,18 +1021,34 @@ async function showArticleList() {
                 <tr class="border-b">
                   <th class="text-left py-3 px-4">タイトル</th>
                   <th class="text-left py-3 px-4">ステータス</th>
+                  <th class="text-left py-3 px-4">公開URL</th>
                   <th class="text-left py-3 px-4">作成日</th>
                   <th class="text-left py-3 px-4">操作</th>
                 </tr>
               </thead>
               <tbody>
-                ${articles.map(article => `
+                ${articles.map(article => {
+                  const articleUrl = article.slug ? `/blog/${article.slug}` : `/blog/${article.id}`;
+                  const fullUrl = window.location.origin + articleUrl;
+                  return `
                   <tr class="border-b hover:bg-gray-50">
                     <td class="py-3 px-4">${escapeHtml(article.title)}</td>
                     <td class="py-3 px-4">
                       <span class="px-2 py-1 rounded text-xs ${article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
                         ${article.status}
                       </span>
+                    </td>
+                    <td class="py-3 px-4">
+                      ${article.status === 'published' ? `
+                        <div class="flex items-center gap-2">
+                          <a href="${articleUrl}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm truncate max-w-xs" title="${fullUrl}">
+                            ${articleUrl}
+                          </a>
+                          <button onclick="copyToClipboard('${fullUrl}')" class="text-gray-600 hover:text-gray-800" title="URLをコピー">
+                            <i class="fas fa-copy"></i>
+                          </button>
+                        </div>
+                      ` : '<span class="text-gray-400 text-sm">未公開</span>'}
                     </td>
                     <td class="py-3 px-4">${new Date(article.created_at).toLocaleDateString('ja-JP')}</td>
                     <td class="py-3 px-4 space-x-2">
@@ -1050,7 +1072,7 @@ async function showArticleList() {
                       </button>
                     </td>
                   </tr>
-                `).join('')}
+                `}).join('')}
               </tbody>
             </table>
           </div>
