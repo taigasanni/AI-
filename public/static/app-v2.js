@@ -1443,7 +1443,7 @@ async function showSettings() {
             </p>
           </div>
 
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
             <!-- 設定パネル -->
             <div class="xl:col-span-2 space-y-6">
               
@@ -1875,8 +1875,8 @@ async function showSettings() {
             </div>
 
             <!-- プレビューパネル -->
-            <div class="xl:col-span-1">
-              <div>
+            <div class="xl:col-span-1 flex flex-col">
+              <div class="flex-1">
                 <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-3">
                   <h3 class="text-lg font-bold text-gray-800 flex items-center">
                     <i class="fas fa-eye text-blue-600 mr-2"></i>リアルタイムプレビュー
@@ -1885,7 +1885,7 @@ async function showSettings() {
                     <i class="fas fa-info-circle mr-1"></i>変更が即座に反映されます
                   </p>
                 </div>
-                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 article-content">
+                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 min-h-[800px] article-content">
                   <!-- プレビュー内容はJavaScriptで動的に生成 -->
                 </div>
               </div>
