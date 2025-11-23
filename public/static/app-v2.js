@@ -1429,55 +1429,251 @@ async function showSettings() {
         <!-- 装飾テンプレートタブ -->
         <div id="settings-content-decoration" class="settings-tab-content hidden">
           <h2 class="text-xl font-bold text-gray-800 mb-4">
-            <i class="fas fa-paint-brush mr-2"></i>装飾テンプレート
+            <i class="fas fa-paint-brush mr-2"></i>装飾スタイル設定
           </h2>
           <p class="text-sm text-gray-600 mb-4">
-            記事生成時に使用する装飾ルール（箇条書き、マーカー、ボックス、表など）をカスタマイズできます。
+            記事の装飾スタイルをカラーピッカーとスタイル選択で簡単にカスタマイズできます。
           </p>
           
           <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p class="text-blue-800 text-sm">
               <i class="fas fa-info-circle mr-2"></i>
-              <strong>装飾テンプレートについて</strong><br>
-              記事生成時にAIがこのテンプレートを参照し、箇条書き・太字・ボックスなどを適切に使用した読みやすい記事を作成します。
+              <strong>装飾スタイル設定について</strong><br>
+              各要素の色やスタイルを選択するだけで、記事の見た目を統一的にカスタマイズできます。変更はリアルタイムでプレビューに反映されます。
             </p>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-            <!-- エディター部分 -->
-            <div>
-              <label class="block text-gray-700 text-sm font-bold mb-2">テンプレート内容</label>
-              <textarea id="decoration-template" rows="24" 
-                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
-                        placeholder="装飾ルールをMarkdown形式で記述..."></textarea>
-              <p class="text-xs text-gray-500 mt-2">
-                ※ 箇条書き、太字、ボックス（引用）、表などのMarkdown記法の使用例を記載してください
-              </p>
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- 設定パネル -->
+            <div class="xl:col-span-2 space-y-6">
+              
+              <!-- 見出しスタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-heading text-blue-600 mr-2"></i>見出しスタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">H2見出し色</label>
+                      <input type="color" id="heading-h2-color" value="#111827" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">H2下線色</label>
+                      <input type="color" id="heading-h2-border" value="#e5e7eb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">H3見出し色</label>
+                      <input type="color" id="heading-h3-color" value="#1f2937" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">H3背景スタイル</label>
+                      <select id="heading-h3-style" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="none">なし</option>
+                        <option value="left-border">左ボーダー</option>
+                        <option value="background">背景色</option>
+                        <option value="underline">下線</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ボックススタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-box text-green-600 mr-2"></i>ボックススタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">💡 ポイントボックス</label>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">背景色</label>
+                        <input type="color" id="box-point-bg" value="#eff6ff" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー色</label>
+                        <input type="color" id="box-point-border" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">テキスト色</label>
+                        <input type="color" id="box-point-text" value="#1e40af" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">⚠️ 注意ボックス</label>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">背景色</label>
+                        <input type="color" id="box-warning-bg" value="#fffbeb" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー色</label>
+                        <input type="color" id="box-warning-border" value="#f59e0b" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">テキスト色</label>
+                        <input type="color" id="box-warning-text" value="#92400e" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">✅ メリットボックス</label>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">背景色</label>
+                        <input type="color" id="box-success-bg" value="#f0fdf4" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー色</label>
+                        <input type="color" id="box-success-border" value="#10b981" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">テキスト色</label>
+                        <input type="color" id="box-success-text" value="#065f46" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ボックススタイル</label>
+                    <select id="box-style" class="w-full px-3 py-2 border rounded-lg">
+                      <option value="border">ボーダーのみ</option>
+                      <option value="background">背景色 + ボーダー</option>
+                      <option value="shadow">背景色 + シャドウ</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ボタンスタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-hand-pointer text-purple-600 mr-2"></i>ボタンスタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="text-sm font-medium text-gray-700 mb-2">背景色</label>
+                      <input type="color" id="button-bg" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="text-sm font-medium text-gray-700 mb-2">テキスト色</label>
+                      <input type="color" id="button-text" value="#ffffff" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="text-sm font-medium text-gray-700 mb-2">ホバー色</label>
+                      <input type="color" id="button-hover" value="#2563eb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ボタンスタイル</label>
+                    <select id="button-style" class="w-full px-3 py-2 border rounded-lg">
+                      <option value="solid">ソリッド</option>
+                      <option value="outline">アウトライン</option>
+                      <option value="gradient">グラデーション</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- テーブルスタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-table text-orange-600 mr-2"></i>テーブルスタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ヘッダー背景色</label>
+                      <input type="color" id="table-header-bg" value="#f9fafb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ヘッダーテキスト色</label>
+                      <input type="color" id="table-header-text" value="#374151" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ボーダー色</label>
+                      <input type="color" id="table-border" value="#e5e7eb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ストライプ背景色</label>
+                      <input type="color" id="table-stripe-bg" value="#f9fafb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">テーブルスタイル</label>
+                    <select id="table-style" class="w-full px-3 py-2 border rounded-lg">
+                      <option value="default">デフォルト</option>
+                      <option value="striped">ストライプ</option>
+                      <option value="bordered">ボーダー強調</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 強調スタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-highlighter text-yellow-600 mr-2"></i>強調スタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">マーカー色</label>
+                    <input type="color" id="marker-color" value="#fde047" class="w-full h-10 rounded cursor-pointer">
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">マーカースタイル</label>
+                    <select id="marker-style" class="w-full px-3 py-2 border rounded-lg">
+                      <option value="underline">下線マーカー</option>
+                      <option value="background">背景マーカー</option>
+                      <option value="bold">太字のみ</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
-            <!-- プレビュー部分 -->
-            <div>
-              <label class="block text-gray-700 text-sm font-bold mb-2">プレビュー</label>
-              <div id="decoration-preview" class="w-full h-[600px] px-4 py-3 border rounded-lg bg-white overflow-y-auto article-content">
-                <p class="text-gray-400 text-center py-12">
-                  <i class="fas fa-eye text-4xl mb-4"></i><br>
-                  「プレビュー」ボタンをクリックして、装飾の見た目を確認できます
-                </p>
+            <!-- プレビューパネル -->
+            <div class="xl:col-span-1">
+              <div class="sticky top-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-eye text-gray-600 mr-2"></i>プレビュー
+                </h3>
+                <div id="decoration-style-preview" class="bg-white border rounded-lg p-6 max-h-[800px] overflow-y-auto article-content">
+                  <!-- プレビュー内容はJavaScriptで動的に生成 -->
+                </div>
               </div>
             </div>
           </div>
           
-          <div class="flex gap-3">
-            <button onclick="loadDecorationTemplate()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+          <div class="flex gap-3 mt-6">
+            <button onclick="loadDecorationStyles()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
               <i class="fas fa-sync-alt mr-2"></i>再読み込み
             </button>
-            <button onclick="previewDecorationTemplate()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-              <i class="fas fa-eye mr-2"></i>プレビュー
-            </button>
-            <button onclick="saveDecorationTemplate()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+            <button onclick="saveDecorationStyles()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
               <i class="fas fa-save mr-2"></i>保存
             </button>
-            <button onclick="resetDecorationTemplate()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700">
+            <button onclick="resetDecorationStyles()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700">
               <i class="fas fa-undo mr-2"></i>デフォルトに戻す
             </button>
           </div>
@@ -1545,7 +1741,8 @@ function switchSettingsTab(tab) {
       }
     });
   } else if (tab === 'decoration') {
-    loadDecorationTemplate();
+    loadDecorationStyles();
+    setupDecorationInputListeners();
   }
 }
 
@@ -2931,11 +3128,46 @@ function showToast(message, type = 'success') {
 // 古いprocessAIAssist関数とapplyAIAssistResult関数は削除済み（チャット形式に置き換え）
 
 // ===================================
-// 装飾テンプレート管理
+// 装飾スタイル管理
 // ===================================
 
-// 装飾テンプレートを読み込む
-async function loadDecorationTemplate() {
+// デフォルトスタイル設定
+const defaultDecorationStyles = {
+  heading: {
+    h2Color: '#111827',
+    h2Border: '#e5e7eb',
+    h3Color: '#1f2937',
+    h3Style: 'left-border'
+  },
+  box: {
+    point: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+    warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
+    success: { bg: '#f0fdf4', border: '#10b981', text: '#065f46' },
+    style: 'background'
+  },
+  button: {
+    bg: '#3b82f6',
+    text: '#ffffff',
+    hover: '#2563eb',
+    style: 'solid'
+  },
+  table: {
+    headerBg: '#f9fafb',
+    headerText: '#374151',
+    border: '#e5e7eb',
+    stripeBg: '#f9fafb',
+    style: 'default'
+  },
+  marker: {
+    color: '#fde047',
+    style: 'underline'
+  }
+};
+
+let currentDecorationStyles = { ...defaultDecorationStyles };
+
+// 装飾スタイルを読み込む
+async function loadDecorationStyles() {
   try {
     const response = await fetch(`${API_BASE}/decoration-template`, {
       headers: {
@@ -2945,26 +3177,121 @@ async function loadDecorationTemplate() {
     
     const data = await response.json();
     
-    if (data.success && data.data) {
-      document.getElementById('decoration-template').value = data.data.template_content || '';
+    if (data.success && data.data && data.data.template_content) {
+      try {
+        currentDecorationStyles = JSON.parse(data.data.template_content);
+        applyStylesToInputs();
+        updateDecorationPreview();
+      } catch (e) {
+        console.log('旧形式のテンプレート、デフォルトを使用');
+        currentDecorationStyles = { ...defaultDecorationStyles };
+        applyStylesToInputs();
+        updateDecorationPreview();
+      }
     } else {
-      console.log('装飾テンプレートが見つかりません');
+      console.log('装飾テンプレートが見つかりません、デフォルトを使用');
+      currentDecorationStyles = { ...defaultDecorationStyles };
+      applyStylesToInputs();
+      updateDecorationPreview();
     }
   } catch (error) {
-    console.error('Load decoration template error:', error);
+    console.error('Load decoration styles error:', error);
+    currentDecorationStyles = { ...defaultDecorationStyles };
+    applyStylesToInputs();
+    updateDecorationPreview();
   }
 }
 
-// 装飾テンプレートを保存する
-async function saveDecorationTemplate() {
-  const templateContent = document.getElementById('decoration-template').value;
+// スタイル設定を入力フィールドに反映
+function applyStylesToInputs() {
+  // 見出し
+  document.getElementById('heading-h2-color').value = currentDecorationStyles.heading.h2Color;
+  document.getElementById('heading-h2-border').value = currentDecorationStyles.heading.h2Border;
+  document.getElementById('heading-h3-color').value = currentDecorationStyles.heading.h3Color;
+  document.getElementById('heading-h3-style').value = currentDecorationStyles.heading.h3Style;
   
-  if (!templateContent) {
-    alert('テンプレート内容を入力してください');
-    return;
-  }
+  // ボックス
+  document.getElementById('box-point-bg').value = currentDecorationStyles.box.point.bg;
+  document.getElementById('box-point-border').value = currentDecorationStyles.box.point.border;
+  document.getElementById('box-point-text').value = currentDecorationStyles.box.point.text;
+  document.getElementById('box-warning-bg').value = currentDecorationStyles.box.warning.bg;
+  document.getElementById('box-warning-border').value = currentDecorationStyles.box.warning.border;
+  document.getElementById('box-warning-text').value = currentDecorationStyles.box.warning.text;
+  document.getElementById('box-success-bg').value = currentDecorationStyles.box.success.bg;
+  document.getElementById('box-success-border').value = currentDecorationStyles.box.success.border;
+  document.getElementById('box-success-text').value = currentDecorationStyles.box.success.text;
+  document.getElementById('box-style').value = currentDecorationStyles.box.style;
   
+  // ボタン
+  document.getElementById('button-bg').value = currentDecorationStyles.button.bg;
+  document.getElementById('button-text').value = currentDecorationStyles.button.text;
+  document.getElementById('button-hover').value = currentDecorationStyles.button.hover;
+  document.getElementById('button-style').value = currentDecorationStyles.button.style;
+  
+  // テーブル
+  document.getElementById('table-header-bg').value = currentDecorationStyles.table.headerBg;
+  document.getElementById('table-header-text').value = currentDecorationStyles.table.headerText;
+  document.getElementById('table-border').value = currentDecorationStyles.table.border;
+  document.getElementById('table-stripe-bg').value = currentDecorationStyles.table.stripeBg;
+  document.getElementById('table-style').value = currentDecorationStyles.table.style;
+  
+  // マーカー
+  document.getElementById('marker-color').value = currentDecorationStyles.marker.color;
+  document.getElementById('marker-style').value = currentDecorationStyles.marker.style;
+}
+
+// 入力フィールドからスタイルを収集
+function collectStylesFromInputs() {
+  return {
+    heading: {
+      h2Color: document.getElementById('heading-h2-color').value,
+      h2Border: document.getElementById('heading-h2-border').value,
+      h3Color: document.getElementById('heading-h3-color').value,
+      h3Style: document.getElementById('heading-h3-style').value
+    },
+    box: {
+      point: {
+        bg: document.getElementById('box-point-bg').value,
+        border: document.getElementById('box-point-border').value,
+        text: document.getElementById('box-point-text').value
+      },
+      warning: {
+        bg: document.getElementById('box-warning-bg').value,
+        border: document.getElementById('box-warning-border').value,
+        text: document.getElementById('box-warning-text').value
+      },
+      success: {
+        bg: document.getElementById('box-success-bg').value,
+        border: document.getElementById('box-success-border').value,
+        text: document.getElementById('box-success-text').value
+      },
+      style: document.getElementById('box-style').value
+    },
+    button: {
+      bg: document.getElementById('button-bg').value,
+      text: document.getElementById('button-text').value,
+      hover: document.getElementById('button-hover').value,
+      style: document.getElementById('button-style').value
+    },
+    table: {
+      headerBg: document.getElementById('table-header-bg').value,
+      headerText: document.getElementById('table-header-text').value,
+      border: document.getElementById('table-border').value,
+      stripeBg: document.getElementById('table-stripe-bg').value,
+      style: document.getElementById('table-style').value
+    },
+    marker: {
+      color: document.getElementById('marker-color').value,
+      style: document.getElementById('marker-style').value
+    }
+  };
+}
+
+// 装飾スタイルを保存する
+async function saveDecorationStyles() {
   try {
+    currentDecorationStyles = collectStylesFromInputs();
+    
     const response = await fetch(`${API_BASE}/decoration-template`, {
       method: 'POST',
       headers: {
@@ -2972,7 +3299,7 @@ async function saveDecorationTemplate() {
         'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
-        template_content: templateContent
+        template_content: JSON.stringify(currentDecorationStyles, null, 2)
       })
     });
     
@@ -2980,18 +3307,214 @@ async function saveDecorationTemplate() {
     
     if (data.success) {
       const statusDiv = document.getElementById('decoration-status');
-      statusDiv.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle mr-1"></i>装飾テンプレートを保存しました</p>';
+      statusDiv.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle mr-1"></i>装飾スタイルを保存しました</p>';
       setTimeout(() => { statusDiv.innerHTML = ''; }, 3000);
+      updateDecorationPreview();
     } else {
       alert(data.error || '保存に失敗しました');
     }
   } catch (error) {
-    console.error('Save decoration template error:', error);
+    console.error('Save decoration styles error:', error);
     alert('保存に失敗しました');
   }
 }
 
-// 装飾テンプレートをプレビュー
+// 装飾プレビューを更新
+function updateDecorationPreview() {
+  const styles = currentDecorationStyles || collectStylesFromInputs();
+  
+  // プレビューHTML
+  const previewHTML = `
+    <style id="decoration-preview-styles">
+      #decoration-style-preview h2 {
+        color: ${styles.heading.h2Color};
+        border-bottom: 2px solid ${styles.heading.h2Border};
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+      
+      #decoration-style-preview h3 {
+        color: ${styles.heading.h3Color};
+        ${styles.heading.h3Style === 'left-border' ? `border-left: 4px solid ${styles.heading.h3Color}; padding-left: 12px;` : ''}
+        ${styles.heading.h3Style === 'background' ? `background: ${hexToRgba(styles.heading.h3Color, 0.1)}; padding: 8px 12px; border-radius: 4px;` : ''}
+        ${styles.heading.h3Style === 'underline' ? `border-bottom: 2px solid ${styles.heading.h3Color}; padding-bottom: 4px;` : ''}
+      }
+      
+      #decoration-style-preview .box-point {
+        background: ${styles.box.point.bg};
+        border: 2px solid ${styles.box.point.border};
+        color: ${styles.box.point.text};
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        ${styles.box.style === 'shadow' ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);' : ''}
+      }
+      
+      #decoration-style-preview .box-warning {
+        background: ${styles.box.warning.bg};
+        border: 2px solid ${styles.box.warning.border};
+        color: ${styles.box.warning.text};
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        ${styles.box.style === 'shadow' ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);' : ''}
+      }
+      
+      #decoration-style-preview .box-success {
+        background: ${styles.box.success.bg};
+        border: 2px solid ${styles.box.success.border};
+        color: ${styles.box.success.text};
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        ${styles.box.style === 'shadow' ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);' : ''}
+      }
+      
+      #decoration-style-preview .preview-button {
+        background: ${styles.button.bg};
+        color: ${styles.button.text};
+        padding: 12px 24px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        ${styles.button.style === 'outline' ? `background: transparent; color: ${styles.button.bg}; border: 2px solid ${styles.button.bg};` : ''}
+        ${styles.button.style === 'gradient' ? `background: linear-gradient(135deg, ${styles.button.bg}, ${styles.button.hover});` : ''}
+      }
+      
+      #decoration-style-preview .preview-button:hover {
+        background: ${styles.button.hover};
+      }
+      
+      #decoration-style-preview table {
+        border: 1px solid ${styles.table.border};
+        border-collapse: collapse;
+        width: 100%;
+        margin: 16px 0;
+      }
+      
+      #decoration-style-preview th {
+        background: ${styles.table.headerBg};
+        color: ${styles.table.headerText};
+        padding: 12px;
+        border: 1px solid ${styles.table.border};
+        font-weight: 600;
+      }
+      
+      #decoration-style-preview td {
+        padding: 12px;
+        border: 1px solid ${styles.table.border};
+      }
+      
+      ${styles.table.style === 'striped' ? `
+      #decoration-style-preview tr:nth-child(even) {
+        background: ${styles.table.stripeBg};
+      }` : ''}
+      
+      ${styles.table.style === 'bordered' ? `
+      #decoration-style-preview table {
+        border: 2px solid ${styles.table.border};
+      }` : ''}
+      
+      #decoration-style-preview .marker {
+        font-weight: 600;
+        ${styles.marker.style === 'underline' ? `background: linear-gradient(transparent 65%, ${hexToRgba(styles.marker.color, 0.5)} 65%); padding: 0 3px;` : ''}
+        ${styles.marker.style === 'background' ? `background: ${hexToRgba(styles.marker.color, 0.3)}; padding: 2px 6px; border-radius: 3px;` : ''}
+      }
+    </style>
+    
+    <h2>見出しスタイル (H2)</h2>
+    <p>これはH2見出しのプレビューです。下線の色も確認できます。</p>
+    
+    <h3>見出しスタイル (H3)</h3>
+    <p>これはH3見出しのプレビューです。選択したスタイルが適用されます。</p>
+    
+    <div class="box-point">
+      <strong>💡 ポイント</strong><br>
+      ここに重要な情報が入ります。背景色とボーダー色をカスタマイズできます。
+    </div>
+    
+    <div class="box-warning">
+      <strong>⚠️ 注意</strong><br>
+      注意事項や警告メッセージがここに表示されます。
+    </div>
+    
+    <div class="box-success">
+      <strong>✅ メリット</strong><br>
+      メリットやおすすめポイントがここに表示されます。
+    </div>
+    
+    <p>重要な部分は<span class="marker">マーカーで強調</span>できます。</p>
+    
+    <button class="preview-button">ボタンスタイル</button>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>内容</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>項目1</td>
+          <td>説明1</td>
+          <td>補足1</td>
+        </tr>
+        <tr>
+          <td>項目2</td>
+          <td>説明2</td>
+          <td>補足2</td>
+        </tr>
+        <tr>
+          <td>項目3</td>
+          <td>説明3</td>
+          <td>補足3</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+  
+  document.getElementById('decoration-style-preview').innerHTML = previewHTML;
+}
+
+// HEX色をRGBAに変換
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// 入力フィールドにイベントリスナーを設定（リアルタイムプレビュー）
+function setupDecorationInputListeners() {
+  const inputIds = [
+    'heading-h2-color', 'heading-h2-border', 'heading-h3-color', 'heading-h3-style',
+    'box-point-bg', 'box-point-border', 'box-point-text',
+    'box-warning-bg', 'box-warning-border', 'box-warning-text',
+    'box-success-bg', 'box-success-border', 'box-success-text', 'box-style',
+    'button-bg', 'button-text', 'button-hover', 'button-style',
+    'table-header-bg', 'table-header-text', 'table-border', 'table-stripe-bg', 'table-style',
+    'marker-color', 'marker-style'
+  ];
+  
+  inputIds.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', () => {
+        currentDecorationStyles = collectStylesFromInputs();
+        updateDecorationPreview();
+      });
+      element.addEventListener('change', () => {
+        currentDecorationStyles = collectStylesFromInputs();
+        updateDecorationPreview();
+      });
+    }
+  });
+}
+
+// 旧プレビュー関数（互換性のため残す）
 function previewDecorationTemplate() {
   const templateContent = document.getElementById('decoration-template').value;
   
@@ -3093,7 +3616,22 @@ function previewDecorationTemplate() {
   setTimeout(() => { statusDiv.innerHTML = ''; }, 2000);
 }
 
-// デフォルトテンプレートに戻す
+// デフォルトスタイルに戻す
+async function resetDecorationStyles() {
+  if (!confirm('デフォルトスタイルに戻しますか？\n現在の設定は失われます。')) {
+    return;
+  }
+  
+  currentDecorationStyles = { ...defaultDecorationStyles };
+  applyStylesToInputs();
+  updateDecorationPreview();
+  
+  const statusDiv = document.getElementById('decoration-status');
+  statusDiv.innerHTML = '<p class="text-blue-600 text-sm"><i class="fas fa-info-circle mr-1"></i>デフォルトスタイルを読み込みました。「保存」ボタンで確定してください。</p>';
+  setTimeout(() => { statusDiv.innerHTML = ''; }, 5000);
+}
+
+// 旧リセット関数（互換性のため残す）
 async function resetDecorationTemplate() {
   if (!confirm('デフォルトテンプレートに戻しますか？\n現在の内容は失われます。')) {
     return;
