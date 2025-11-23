@@ -165,6 +165,11 @@ function updateSidebarActive(page) {
   }
 }
 
+// エイリアス関数（user-management.js等で使用）
+function setActivePage(page) {
+  updateSidebarActive(page);
+}
+
 // ===================================
 // プロンプト管理
 // ===================================
