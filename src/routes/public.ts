@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
 
-const publicRoutes = new Hono<{ Bindings: Env }>({ strict: false });
+const publicRoutes = new Hono<{ Bindings: Env }>();
 
 /**
  * H2見出し配下に画像を自動挿入する関数
@@ -317,138 +317,6 @@ publicRoutes.get('/', async (c) => {
 });
 
 /**
- * ブログ記事一覧ページのハンドラー（共通）
- */
-const blogListHandler = async (c: any) => {
-  try {
-    const articles = await c.env.DB.prepare(
-      `SELECT a.*, u.name as author_name 
-       FROM articles a 
-       JOIN users u ON a.user_id = u.id 
-       WHERE a.status = 'published' 
-       ORDER BY a.created_at DESC 
-       LIMIT 50`
-    ).all();
-
-    // 見出し画像を取得（アイキャッチのフォールバック用）
-    const headingImages = await c.env.DB.prepare(
-      `SELECT hi.*, il.image_url, il.alt_text
-       FROM heading_images hi
-       JOIN image_library il ON hi.image_name = il.image_name`
-    ).all();
-
-    // 各記事のアイキャッチ画像を決定
-    const articleList = (articles.results || []).map((article: any) => {
-      let featuredImageUrl = article.og_image_url;
-      
-      // og_image_urlがない場合、最初のH2画像を使用
-      if (!featuredImageUrl && article.content) {
-        const h2Match = article.content.match(/^##\s+(.+)$/m);
-        if (h2Match && headingImages.results) {
-          const firstH2Text = h2Match[1].trim();
-          const matchingImage = (headingImages.results as any[]).find(
-            (img: any) => img.heading_text === firstH2Text
-          );
-          if (matchingImage) {
-            featuredImageUrl = matchingImage.image_url;
-          }
-        }
-      }
-      
-      return {
-        ...article,
-        featured_image_url: featuredImageUrl
-      };
-    });
-
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>記事一覧 - AI Blog CMS</title>
-          <meta name="description" content="AI Blog CMSで管理されているブログ記事一覧">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-      </head>
-      <body class="bg-gray-50">
-          <!-- ヘッダー -->
-          <header class="bg-white shadow">
-              <div class="max-w-6xl mx-auto px-4 py-6">
-                  <h1 class="text-3xl font-bold text-gray-800">
-                      <i class="fas fa-newspaper mr-2 text-blue-600"></i>
-                      ブログ記事一覧
-                  </h1>
-              </div>
-          </header>
-
-          <!-- 記事一覧 -->
-          <main class="max-w-6xl mx-auto px-4 py-8">
-              ${articleList.length === 0 ? `
-                <div class="bg-white rounded-lg shadow p-12 text-center">
-                    <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
-                    <p class="text-xl text-gray-600">まだ公開記事がありません</p>
-                </div>
-              ` : `
-                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    ${articleList.map((article: any) => `
-                      <article class="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
-                          ${article.featured_image_url ? `
-                              <a href="/blog/${article.slug || article.id}">
-                                  <img src="${article.featured_image_url}" 
-                                       alt="${article.title}" 
-                                       class="w-full h-48 object-cover"
-                                       loading="lazy">
-                              </a>
-                          ` : ''}
-                          <a href="/blog/${article.slug || article.id}" class="block p-6">
-                              <h2 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600">
-                                  ${article.title}
-                              </h2>
-                              ${article.meta_description ? `
-                                <p class="text-gray-600 mb-4">${article.meta_description.substring(0, 100)}...</p>
-                              ` : ''}
-                              <div class="flex items-center text-sm text-gray-500">
-                                  <i class="fas fa-user mr-2"></i>
-                                  <span class="mr-4">${article.author_name}</span>
-                                  <i class="fas fa-calendar mr-2"></i>
-                                  <span>${new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
-                              </div>
-                          </a>
-                      </article>
-                    `).join('')}
-                </div>
-              `}
-          </main>
-
-          <!-- フッター -->
-          <footer class="bg-white shadow mt-12">
-              <div class="max-w-6xl mx-auto px-4 py-6 text-center text-gray-600">
-                  <p>&copy; 2025 AI Blog CMS. All rights reserved.</p>
-              </div>
-          </footer>
-      </body>
-      </html>
-    `);
-
-  } catch (error: any) {
-    console.error('Public articles list error:', error);
-    return c.text('Internal Server Error', 500);
-  }
-};
-
-/**
- * GET /blog - ブログ記事一覧ページ（トレーリングスラッシュなし）
- */
-publicRoutes.get('/blog', blogListHandler);
-
-/**
- * GET /blog/ - ブログ記事一覧ページ（トレーリングスラッシュあり）
- */
-publicRoutes.get('/blog/', blogListHandler);
-
-/**
  * GET /blog/:id - 記事公開ページ（IDまたはslug）
  */
 publicRoutes.get('/blog/:id', async (c) => {
@@ -497,7 +365,7 @@ publicRoutes.get('/blog/:id', async (c) => {
         fa.og_image_url as from_article_image_url
        FROM internal_links il
        JOIN articles fa ON il.from_article_id = fa.id
-       WHERE il.to_article_id = ? AND il.is_active = 1
+       WHERE il.to_article_id = ?
        ORDER BY il.position ASC`
     ).bind(article.id).all();
 
@@ -768,5 +636,126 @@ publicRoutes.get('/blog/:id', async (c) => {
   }
 });
 
+/**
+ * GET /blog - ブログ記事一覧ページ
+ */
+publicRoutes.get('/blog', async (c) => {
+  try {
+    const articles = await c.env.DB.prepare(
+      `SELECT a.*, u.name as author_name 
+       FROM articles a 
+       JOIN users u ON a.user_id = u.id 
+       WHERE a.status = 'published' 
+       ORDER BY a.created_at DESC 
+       LIMIT 50`
+    ).all();
+
+    // 見出し画像を取得（アイキャッチのフォールバック用）
+    const headingImages = await c.env.DB.prepare(
+      `SELECT hi.*, il.image_url, il.alt_text
+       FROM heading_images hi
+       JOIN image_library il ON hi.image_name = il.image_name`
+    ).all();
+
+    // 各記事のアイキャッチ画像を決定
+    const articleList = (articles.results || []).map((article: any) => {
+      let featuredImageUrl = article.og_image_url;
+      
+      // og_image_urlがない場合、最初のH2画像を使用
+      if (!featuredImageUrl && article.content) {
+        const h2Match = article.content.match(/^##\s+(.+)$/m);
+        if (h2Match && headingImages.results) {
+          const firstH2Text = h2Match[1].trim();
+          const matchingImage = (headingImages.results as any[]).find(
+            (img: any) => img.heading_text === firstH2Text
+          );
+          if (matchingImage) {
+            featuredImageUrl = matchingImage.image_url;
+          }
+        }
+      }
+      
+      return {
+        ...article,
+        featured_image_url: featuredImageUrl
+      };
+    });
+
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>記事一覧 - AI Blog CMS</title>
+          <meta name="description" content="AI Blog CMSで管理されているブログ記事一覧">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+      </head>
+      <body class="bg-gray-50">
+          <!-- ヘッダー -->
+          <header class="bg-white shadow">
+              <div class="max-w-6xl mx-auto px-4 py-6">
+                  <h1 class="text-3xl font-bold text-gray-800">
+                      <i class="fas fa-newspaper mr-2 text-blue-600"></i>
+                      ブログ記事一覧
+                  </h1>
+              </div>
+          </header>
+
+          <!-- 記事一覧 -->
+          <main class="max-w-6xl mx-auto px-4 py-8">
+              ${articleList.length === 0 ? `
+                <div class="bg-white rounded-lg shadow p-12 text-center">
+                    <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+                    <p class="text-xl text-gray-600">まだ公開記事がありません</p>
+                </div>
+              ` : `
+                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    ${articleList.map((article: any) => `
+                      <article class="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
+                          ${article.featured_image_url ? `
+                              <a href="/blog/${article.slug || article.id}">
+                                  <img src="${article.featured_image_url}" 
+                                       alt="${article.title}" 
+                                       class="w-full h-48 object-cover"
+                                       loading="lazy">
+                              </a>
+                          ` : ''}
+                          <a href="/blog/${article.slug || article.id}" class="block p-6">
+                              <h2 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600">
+                                  ${article.title}
+                              </h2>
+                              ${article.meta_description ? `
+                                <p class="text-gray-600 mb-4">${article.meta_description.substring(0, 100)}...</p>
+                              ` : ''}
+                              <div class="flex items-center text-sm text-gray-500">
+                                  <i class="fas fa-user mr-2"></i>
+                                  <span class="mr-4">${article.author_name}</span>
+                                  <i class="fas fa-calendar mr-2"></i>
+                                  <span>${new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
+                              </div>
+                          </a>
+                      </article>
+                    `).join('')}
+                </div>
+              `}
+          </main>
+
+          <!-- フッター -->
+          <footer class="bg-white shadow mt-12">
+              <div class="max-w-6xl mx-auto px-4 py-6 text-center text-gray-600">
+                  <p>&copy; 2025 AI Blog CMS. All rights reserved.</p>
+              </div>
+          </footer>
+      </body>
+      </html>
+    `);
+
+  } catch (error: any) {
+    console.error('Public articles list error:', error);
+    return c.text('Internal Server Error', 500);
+  }
+});
 
 export default publicRoutes;
