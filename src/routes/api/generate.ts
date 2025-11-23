@@ -21,26 +21,25 @@ function getMaxTokensForModel(modelName: string): number {
     return 90000;
   }
   
-  // Claude 3.5 Haiku（最大20K）
+  // Claude 3.5 Haiku（最大8K）
   if (modelName.includes('claude-3-5-haiku')) {
-    return 20000;
+    return 8192;
   }
   
-  // Claude 3.5 Sonnet, Claude Sonnet 3.7（最大16K）
+  // Claude 3.5 Sonnet, Claude Sonnet 3.7（最大8K）
   if (modelName.includes('claude-3-5-sonnet') || 
       modelName.includes('claude-sonnet-3-7')) {
-    return 16000;
+    return 8192;
   }
   
-  // Claude 3 Opus, Claude 3 Haiku（最大20K）
-  if (modelName.includes('claude-3-opus') || 
-      modelName.includes('claude-3-haiku')) {
-    return 20000;
+  // Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku（最大4K）
+  if (modelName.includes('claude-3')) {
+    return 4096;
   }
   
   // GPT-4o-mini（最大16K）
   if (modelName.includes('gpt-4o-mini')) {
-    return 16000;
+    return 16384;
   }
   
   // その他のGPTモデル（デフォルト4K）
@@ -48,7 +47,7 @@ function getMaxTokensForModel(modelName: string): number {
     return 4096;
   }
   
-  // デフォルト（Claude 3系）
+  // デフォルト
   return 4096;
 }
 

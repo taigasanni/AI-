@@ -20,17 +20,20 @@ const AVAILABLE_MODELS = {
   ],
   anthropic: [
     // Claude 4.x シリーズ（最新・最大90Kトークン出力）
-    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (最高性能・超長文対応)', description: '最高性能。最大90Kトークン出力。超長文記事に最適', maxTokens: 90000 },
-    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (高性能・長文対応)', description: '高性能でコスパ良。最大90Kトークン出力。長文記事に最適', maxTokens: 90000 },
-    { id: 'claude-haiku-4-20250514', name: 'Claude Haiku 4 (高速・長文対応)', description: '高速で低コスト。最大90Kトークン出力。長文記事対応', maxTokens: 90000 },
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (最高性能・超長文対応)', description: '最高性能。最大90Kトークン出力（約67,500文字）。超長文記事に最適' },
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (推奨・長文対応)', description: '高性能でコスパ良。最大90Kトークン出力（約67,500文字）。長文記事に最適' },
+    { id: 'claude-haiku-4-20250514', name: 'Claude Haiku 4 (高速・長文対応)', description: '高速で低コスト。最大90Kトークン出力（約67,500文字）。長文記事対応' },
     
-    // Claude 3.x シリーズ
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2 (推奨)', description: '2024年10月版。最大16Kトークン出力。バランスが良い', maxTokens: 16000 },
-    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet v1', description: '2024年6月版。最大16Kトークン出力', maxTokens: 16000 },
-    { id: 'claude-sonnet-3-7-20250219', name: 'Claude Sonnet 3.7', description: '最大16Kトークン出力。高性能', maxTokens: 16000 },
-    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: '最大20Kトークン出力。高速', maxTokens: 20000 },
-    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: '最高性能。最大20Kトークン出力', maxTokens: 20000 },
-    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (デフォルト)', description: '最も高速で低コスト。確実に動作。最大20Kトークン出力', maxTokens: 20000 }
+    // Claude 3.5/3.7 シリーズ（最大8Kトークン出力）
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2', description: '2024年10月版。最大8Kトークン出力（約6,000文字）。バランスが良い' },
+    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet v1', description: '2024年6月版。最大8Kトークン出力（約6,000文字）' },
+    { id: 'claude-sonnet-3-7-20250219', name: 'Claude Sonnet 3.7', description: '最大8Kトークン出力（約6,000文字）。高性能' },
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: '最大8Kトークン出力（約6,000文字）。高速' },
+    
+    // Claude 3 シリーズ（最大4Kトークン出力）
+    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: '最高性能。最大4Kトークン出力（約3,000文字）' },
+    { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', description: '最大4Kトークン出力（約3,000文字）' },
+    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (デフォルト)', description: '最も高速で低コスト。確実に動作。最大4Kトークン出力（約3,000文字）' }
   ]
 };
 
