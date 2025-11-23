@@ -1453,31 +1453,110 @@ async function showSettings() {
                   <i class="fas fa-heading text-blue-600 mr-2"></i>見出しスタイル
                 </h3>
                 
-                <div class="space-y-4">
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">H2見出し色</label>
-                      <input type="color" id="heading-h2-color" value="#111827" class="w-full h-10 rounded cursor-pointer">
+                <!-- H2見出し -->
+                <div class="mb-6 pb-6 border-b">
+                  <h4 class="font-semibold text-gray-700 mb-3">H2見出し</h4>
+                  <div class="space-y-3">
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">テキスト色</label>
+                        <input type="color" id="heading-h2-color" value="#111827" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">背景色</label>
+                        <input type="color" id="heading-h2-bg" value="#ffffff" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">パディング (px)</label>
+                        <input type="number" id="heading-h2-padding" value="8" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
                     </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">H2下線色</label>
-                      <input type="color" id="heading-h2-border" value="#e5e7eb" class="w-full h-10 rounded cursor-pointer">
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー位置</label>
+                        <select id="heading-h2-border-position" class="w-full px-3 py-2 border rounded-lg text-sm">
+                          <option value="none">なし</option>
+                          <option value="bottom">下線</option>
+                          <option value="left">左線</option>
+                          <option value="all">全周</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー色</label>
+                        <input type="color" id="heading-h2-border-color" value="#e5e7eb" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー太さ (px)</label>
+                        <input type="number" id="heading-h2-border-width" value="2" min="0" max="10" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">角丸 (px)</label>
+                        <input type="number" id="heading-h2-radius" value="0" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">左ボーダー色</label>
+                        <input type="color" id="heading-h2-left-border-color" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">左ボーダー太さ (px)</label>
+                        <input type="number" id="heading-h2-left-border-width" value="0" min="0" max="20" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
                     </div>
                   </div>
-                  
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">H3見出し色</label>
-                      <input type="color" id="heading-h3-color" value="#1f2937" class="w-full h-10 rounded cursor-pointer">
+                </div>
+
+                <!-- H3見出し -->
+                <div>
+                  <h4 class="font-semibold text-gray-700 mb-3">H3見出し</h4>
+                  <div class="space-y-3">
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">テキスト色</label>
+                        <input type="color" id="heading-h3-color" value="#1f2937" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">背景色</label>
+                        <input type="color" id="heading-h3-bg" value="#ffffff" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">パディング (px)</label>
+                        <input type="number" id="heading-h3-padding" value="0" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
                     </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">H3背景スタイル</label>
-                      <select id="heading-h3-style" class="w-full px-3 py-2 border rounded-lg">
-                        <option value="none">なし</option>
-                        <option value="left-border">左ボーダー</option>
-                        <option value="background">背景色</option>
-                        <option value="underline">下線</option>
-                      </select>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー位置</label>
+                        <select id="heading-h3-border-position" class="w-full px-3 py-2 border rounded-lg text-sm">
+                          <option value="none">なし</option>
+                          <option value="bottom">下線</option>
+                          <option value="left">左線</option>
+                          <option value="all">全周</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー色</label>
+                        <input type="color" id="heading-h3-border-color" value="#1f2937" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">ボーダー太さ (px)</label>
+                        <input type="number" id="heading-h3-border-width" value="0" min="0" max="10" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-gray-600">角丸 (px)</label>
+                        <input type="number" id="heading-h3-radius" value="0" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">左ボーダー色</label>
+                        <input type="color" id="heading-h3-left-border-color" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                      </div>
+                      <div>
+                        <label class="text-xs text-gray-600">左ボーダー太さ (px)</label>
+                        <input type="number" id="heading-h3-left-border-width" value="4" min="0" max="20" class="w-full px-3 py-2 border rounded-lg">
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1651,6 +1730,148 @@ async function showSettings() {
                 </div>
               </div>
 
+              <!-- リストスタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-list text-purple-600 mr-2"></i>リストスタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">マーカー色</label>
+                      <input type="color" id="list-marker-color" value="#6b7280" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">マーカースタイル</label>
+                      <select id="list-marker-style" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="disc">丸</option>
+                        <option value="circle">円</option>
+                        <option value="square">四角</option>
+                        <option value="none">なし</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">行間 (px)</label>
+                      <input type="number" id="list-spacing" value="12" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">インデント (px)</label>
+                    <input type="number" id="list-indent" value="32" min="0" max="100" class="w-full px-3 py-2 border rounded-lg">
+                  </div>
+                </div>
+              </div>
+
+              <!-- リンクスタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-link text-indigo-600 mr-2"></i>リンクスタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">リンク色</label>
+                      <input type="color" id="link-color" value="#3b82f6" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ホバー色</label>
+                      <input type="color" id="link-hover-color" value="#2563eb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">下線表示</label>
+                      <select id="link-underline" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="none">なし</option>
+                        <option value="always">常に表示</option>
+                        <option value="hover">ホバー時のみ</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">太さ</label>
+                      <select id="link-weight" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="normal">通常</option>
+                        <option value="medium">中太</option>
+                        <option value="semibold">太字</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 画像スタイル -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-image text-pink-600 mr-2"></i>画像スタイル
+                </h3>
+                
+                <div class="space-y-4">
+                  <div class="grid grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">角丸 (px)</label>
+                      <input type="number" id="image-radius" value="4" min="0" max="50" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">シャドウ</label>
+                      <select id="image-shadow" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="false">なし</option>
+                        <option value="true">あり</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ボーダー</label>
+                      <select id="image-border" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="false">なし</option>
+                        <option value="true">あり</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ボーダー色</label>
+                      <input type="color" id="image-border-color" value="#e5e7eb" class="w-full h-10 rounded cursor-pointer">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">ボーダー太さ (px)</label>
+                      <input type="number" id="image-border-width" value="1" min="0" max="10" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- カスタムCSSタブ -->
+              <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <i class="fas fa-code text-red-600 mr-2"></i>カスタムCSS
+                  <span class="ml-2 text-xs text-gray-500 font-normal">上級者向け</span>
+                </h3>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p class="text-yellow-800 text-sm">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    <strong>注意:</strong> ここに記述したCSSは、上記の設定より優先されます。CSS の知識がある方向けです。
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">追加のCSSコード</label>
+                  <textarea id="custom-css" rows="10" 
+                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
+                            placeholder="/* 例: 独自のスタイルを追加 */
+.article-content h2 {
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}"></textarea>
+                  <p class="text-xs text-gray-500 mt-2">
+                    ※ <code>.article-content</code>, <code>.markdown-preview</code>, <code>#article-preview-content</code> のセレクタが使用できます
+                  </p>
+                </div>
+              </div>
+
             </div>
 
             <!-- プレビューパネル -->
@@ -1666,6 +1887,32 @@ async function showSettings() {
             </div>
           </div>
           
+          <!-- プリセットテーマ -->
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+              <i class="fas fa-palette text-purple-600 mr-2"></i>プリセットテーマ
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">ワンクリックで人気のデザインテーマを適用できます</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button onclick="applyPresetTheme('modern')" class="px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-purple-500 transition-colors">
+                <div class="font-semibold text-gray-800">モダン</div>
+                <div class="text-xs text-gray-500">シンプル & クリーン</div>
+              </button>
+              <button onclick="applyPresetTheme('colorful')" class="px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-purple-500 transition-colors">
+                <div class="font-semibold text-gray-800">カラフル</div>
+                <div class="text-xs text-gray-500">鮮やか & ポップ</div>
+              </button>
+              <button onclick="applyPresetTheme('minimal')" class="px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-purple-500 transition-colors">
+                <div class="font-semibold text-gray-800">ミニマル</div>
+                <div class="text-xs text-gray-500">シンプル & 洗練</div>
+              </button>
+              <button onclick="applyPresetTheme('elegant')" class="px-4 py-3 bg-white border-2 border-gray-300 rounded-lg hover:border-purple-500 transition-colors">
+                <div class="font-semibold text-gray-800">エレガント</div>
+                <div class="text-xs text-gray-500">上品 & 高級感</div>
+              </button>
+            </div>
+          </div>
+
           <div class="flex gap-3 mt-6">
             <button onclick="loadDecorationStyles()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
               <i class="fas fa-sync-alt mr-2"></i>再読み込み
@@ -3134,34 +3381,76 @@ function showToast(message, type = 'success') {
 // デフォルトスタイル設定
 const defaultDecorationStyles = {
   heading: {
-    h2Color: '#111827',
-    h2Border: '#e5e7eb',
-    h3Color: '#1f2937',
-    h3Style: 'left-border'
+    h2: {
+      color: '#111827',
+      bgColor: '#ffffff',
+      borderColor: '#e5e7eb',
+      borderWidth: '2',
+      borderPosition: 'bottom',
+      padding: '8',
+      borderRadius: '0',
+      leftBorderColor: '#3b82f6',
+      leftBorderWidth: '0'
+    },
+    h3: {
+      color: '#1f2937',
+      bgColor: '#ffffff',
+      borderColor: '#1f2937',
+      borderWidth: '0',
+      borderPosition: 'none',
+      padding: '0',
+      borderRadius: '0',
+      leftBorderColor: '#3b82f6',
+      leftBorderWidth: '4'
+    }
   },
   box: {
-    point: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
-    warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
-    success: { bg: '#f0fdf4', border: '#10b981', text: '#065f46' },
-    style: 'background'
+    point: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af', borderWidth: '2', borderRadius: '8', padding: '16' },
+    warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e', borderWidth: '2', borderRadius: '8', padding: '16' },
+    success: { bg: '#f0fdf4', border: '#10b981', text: '#065f46', borderWidth: '2', borderRadius: '8', padding: '16' },
+    style: 'background',
+    shadow: false
   },
   button: {
     bg: '#3b82f6',
     text: '#ffffff',
     hover: '#2563eb',
-    style: 'solid'
+    style: 'solid',
+    borderRadius: '6',
+    padding: '12'
   },
   table: {
     headerBg: '#f9fafb',
     headerText: '#374151',
     border: '#e5e7eb',
     stripeBg: '#f9fafb',
-    style: 'default'
+    style: 'default',
+    borderRadius: '0'
   },
   marker: {
     color: '#fde047',
     style: 'underline'
-  }
+  },
+  list: {
+    markerColor: '#6b7280',
+    markerStyle: 'disc',
+    spacing: '12',
+    indent: '32'
+  },
+  link: {
+    color: '#3b82f6',
+    hoverColor: '#2563eb',
+    underline: 'hover',
+    weight: 'normal'
+  },
+  image: {
+    borderRadius: '4',
+    shadow: false,
+    border: false,
+    borderColor: '#e5e7eb',
+    borderWidth: '1'
+  },
+  customCSS: ''
 };
 
 let currentDecorationStyles = { ...defaultDecorationStyles };
