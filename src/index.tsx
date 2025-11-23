@@ -5,6 +5,7 @@ import type { Env } from './types'
 
 // API Routes
 import auth from './routes/api/auth'
+import users from './routes/api/users'
 import articles from './routes/api/articles'
 import keywords from './routes/api/keywords'
 import generate from './routes/api/generate'
@@ -38,6 +39,7 @@ app.route('/', publicRoutes)
 
 // APIルート
 app.route('/api/auth', auth)
+app.route('/api/users', users)
 app.route('/api/articles', articles)
 app.route('/api/keywords', keywords)
 app.route('/api/generate', generate)
@@ -173,6 +175,11 @@ app.get('/admin', (c) => {
                         <span>参照データ管理</span>
                     </a>
                     <div class="border-t my-4"></div>
+                    <a href="#" onclick="event.preventDefault(); showUserManagement(); return false;" data-page="users" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
+                        <i class="fas fa-users w-6"></i>
+                        <span>ユーザー管理</span>
+                    </a>
+                    <div class="border-t my-4"></div>
                     <a href="#" onclick="showSettings()" data-page="settings" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-cog w-6"></i>
                         <span>設定</span>
@@ -194,6 +201,7 @@ app.get('/admin', (c) => {
         <script src="/static/app-v2.js"></script>
         <script src="/static/internal-links.js"></script>
         <script src="/static/image-library.js"></script>
+        <script src="/static/user-management.js"></script>
     </body>
     </html>
   `)
