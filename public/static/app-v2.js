@@ -75,14 +75,13 @@ function showMainScreen() {
 
 function showLogin() {
   document.getElementById('login-form').classList.remove('hidden');
-  document.getElementById('register-form').classList.add('hidden');
   document.getElementById('message').textContent = '';
 }
 
+// 招待制のため、新規登録機能は無効化
 function showRegister() {
-  document.getElementById('login-form').classList.add('hidden');
-  document.getElementById('register-form').classList.remove('hidden');
-  document.getElementById('message').textContent = '';
+  // 新規登録は無効化（招待制）
+  alert('新規登録は無効化されています。このシステムは招待制です。');
 }
 
 // ===================================
@@ -128,51 +127,11 @@ async function handleLogin() {
   }
 }
 
+// 招待制のため、新規登録機能は無効化
 async function handleRegister() {
-  const name = document.getElementById('register-name').value;
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
   const messageEl = document.getElementById('message');
-
-  if (!name || !email || !password) {
-    messageEl.textContent = 'すべての項目を入力してください';
-    messageEl.className = 'mt-4 text-center text-sm text-red-600';
-    return;
-  }
-
-  if (password.length < 8) {
-    messageEl.textContent = 'パスワードは8文字以上で入力してください';
-    messageEl.className = 'mt-4 text-center text-sm text-red-600';
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name, email, password })
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      authToken = data.data.token;
-      localStorage.setItem('auth_token', authToken);
-      currentUser = data.data.user;
-      showMainScreen();
-      showContentCreation();
-      messageEl.textContent = '';
-    } else {
-      messageEl.textContent = data.error || '登録に失敗しました';
-      messageEl.className = 'mt-4 text-center text-sm text-red-600';
-    }
-  } catch (error) {
-    console.error('Register error:', error);
-    messageEl.textContent = '登録に失敗しました';
-    messageEl.className = 'mt-4 text-center text-sm text-red-600';
-  }
+  messageEl.textContent = '新規登録は無効化されています。このシステムは招待制です。';
+  messageEl.className = 'mt-4 text-center text-sm text-red-600';
 }
 
 async function handleLogout() {

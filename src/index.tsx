@@ -127,29 +127,8 @@ app.get('/admin', (c) => {
                     <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-200">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </button>
-                    <div class="text-center mt-4">
-                        <a href="#" onclick="showRegister()" class="text-blue-600 hover:underline text-sm">新規登録はこちら</a>
-                    </div>
-                </div>
-
-                <div id="register-form" class="hidden">
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">名前</label>
-                        <input type="text" id="register-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="山田太郎">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">メールアドレス</label>
-                        <input type="email" id="register-email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="email@example.com">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">パスワード (8文字以上)</label>
-                        <input type="password" id="register-password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="パスワード">
-                    </div>
-                    <button onclick="handleRegister()" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition duration-200">
-                        <i class="fas fa-user-plus mr-2"></i>新規登録
-                    </button>
-                    <div class="text-center mt-4">
-                        <a href="#" onclick="showLogin()" class="text-blue-600 hover:underline text-sm">ログインはこちら</a>
+                    <div class="text-center mt-4 text-sm text-gray-500">
+                        <i class="fas fa-lock mr-1"></i>招待制システム - アクセス権限が必要です
                     </div>
                 </div>
 
