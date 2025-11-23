@@ -291,7 +291,7 @@ generate.post('/article', async (c) => {
         }
       ],
       temperature: 0.7,
-      maxTokens: 8000 // 文字数を増やすために maxTokens を増加
+      maxTokens: 4096 // Claude 3 Haikuの最大値
     });
 
     // 生成された記事の文字数をカウント
@@ -403,7 +403,7 @@ ${original_content}
         }
       ],
       temperature: 0.7,
-      maxTokens: 8000
+      maxTokens: 4096
     });
 
     // 文字数カウントと警告
