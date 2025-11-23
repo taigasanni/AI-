@@ -63,6 +63,7 @@ publicArticlesApi.get('/:id', async (c) => {
         a.content, 
         a.meta_description, 
         a.target_keywords, 
+        a.og_image_url,
         a.published_at, 
         a.created_at, 
         a.updated_at,
@@ -125,11 +126,31 @@ publicArticlesApi.get('/:id', async (c) => {
       console.log('✅ Internal links inserted:', internalLinks.results.length);
     }
 
+    // 3. アイキャッチ画像を決定（優先順位: og_image_url > 最初のH2画像）
+    let featuredImageUrl = article.og_image_url || null;
+    
+    if (!featuredImageUrl && article.content) {
+      // 最初のH2見出しを抽出
+      const h2Match = article.content.match(/^##\s+(.+)$/m);
+      if (h2Match && headingImages.results) {
+        const firstH2Text = h2Match[1].trim();
+        // H2見出しに対応する画像を検索
+        const matchingImage = (headingImages.results as any[]).find(
+          (img: any) => img.heading_text === firstH2Text
+        );
+        if (matchingImage) {
+          featuredImageUrl = matchingImage.image_url;
+          console.log('✅ Auto-assigned featured image from first H2:', featuredImageUrl);
+        }
+      }
+    }
+
     return c.json({
       success: true,
       data: {
         ...article,
         content: contentWithEnhancements,
+        featured_image_url: featuredImageUrl,
         internal_links: internalLinks.results || [],
         heading_images: headingImages.results || []
       }

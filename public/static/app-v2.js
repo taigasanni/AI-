@@ -652,7 +652,7 @@ function renderCurrentStep() {
           
           <div class="mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2">
-              アイキャッチ画像 <span class="text-gray-500 text-xs">(OG画像/SNSシェア用)</span>
+              アイキャッチ画像 <span class="text-gray-500 text-xs">(タイトル直下に表示)</span>
             </label>
             <div class="flex items-center gap-4">
               <div id="og-image-preview" class="flex-shrink-0">
@@ -676,7 +676,7 @@ function renderCurrentStep() {
                 ` : ''}
                 <p class="text-xs text-gray-500">
                   <i class="fas fa-info-circle mr-1"></i>
-                  未設定の場合、最初のH2見出しの画像が自動的に使用されます
+                  記事タイトル直下に表示されます。未設定の場合、最初のH2見出しの画像が自動的に使用されます
                 </p>
               </div>
             </div>

@@ -473,6 +473,9 @@ publicRoutes.get('/blog/:id', async (c) => {
                       </div>
                   </header>
 
+                  <!-- アイキャッチ画像（タイトル直下） -->
+                  <div id="featured-image-container"></div>
+
                   <!-- 記事本文 -->
                   <div id="article-body" class="article-content text-gray-800">
                       <!-- Markdown will be rendered here -->
@@ -503,8 +506,42 @@ publicRoutes.get('/blog/:id', async (c) => {
           </footer>
 
           <script>
-              // Markdownをレンダリング
+              // アイキャッチ画像の取得と表示
+              const ogImageUrl = ${JSON.stringify(article.og_image_url || '')};
               const content = ${JSON.stringify(contentWithEnhancements || '')};
+              const headingImages = ${JSON.stringify(headingImages.results || [])};
+              
+              // アイキャッチ画像を決定（優先順位: og_image_url > 最初のH2画像）
+              let featuredImageUrl = ogImageUrl;
+              
+              if (!featuredImageUrl) {
+                // 最初のH2見出しを抽出
+                const h2Match = content.match(/^##\\s+(.+)$/m);
+                if (h2Match) {
+                  const firstH2Text = h2Match[1].trim();
+                  // H2見出しに対応する画像を検索
+                  const matchingImage = headingImages.find(img => img.heading_text === firstH2Text);
+                  if (matchingImage) {
+                    featuredImageUrl = matchingImage.image_url;
+                  }
+                }
+              }
+              
+              // アイキャッチ画像を表示
+              if (featuredImageUrl) {
+                document.getElementById('featured-image-container').innerHTML = \`
+                  <figure style="margin: 0 0 2rem 0;">
+                    <img 
+                      src="\${featuredImageUrl}" 
+                      alt="${article.title}" 
+                      style="width: 100%; height: auto; max-height: 500px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
+                      loading="eager"
+                    />
+                  </figure>
+                \`;
+              }
+              
+              // Markdownをレンダリング
               // IMPORTANT: mangle: false, headerIds: false でHTMLタグをそのまま残す
               marked.setOptions({
                 breaks: true,
