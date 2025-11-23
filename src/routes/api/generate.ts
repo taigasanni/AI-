@@ -12,6 +12,15 @@ const generate = new Hono<{ Bindings: Env }>();
 
 generate.use('*', authMiddleware);
 
+// ヘルパー: 装飾テンプレートを取得
+async function getDecorationTemplate(db: D1Database, userId: number): Promise<string> {
+  const template = await db.prepare(
+    'SELECT template_content FROM decoration_templates WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1'
+  ).bind(userId).first<{ template_content: string }>();
+  
+  return template?.template_content || '';
+}
+
 // ヘルパー: ユーザーのAI設定を取得
 async function getUserAIConfig(db: D1Database, userId: number, envVars: any, useCase: string = 'article') {
   // ユーザーのモデル設定を取得
@@ -198,12 +207,20 @@ generate.post('/article', async (c) => {
       ? outline 
       : JSON.stringify(outline, null, 2);
 
+    // 装飾テンプレートを取得
+    const decorationTemplate = await getDecorationTemplate(c.env.DB, user.userId);
+
     // プロンプトテンプレートに変数を埋め込み
     let finalPrompt = prompt.body
       .replace(/\{\{keyword\}\}/g, keyword)
       .replace(/\{\{outline\}\}/g, outlineStr)
       .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
+
+    // 装飾テンプレートが存在する場合は追加
+    if (decorationTemplate) {
+      finalPrompt += '\n\n## 記事装飾ルール\n\n以下の装飾ルールに従って、視覚的に魅力的で読みやすい記事を作成してください：\n\n' + decorationTemplate;
+    }
 
     // ユーザーのAI設定を取得
     const { provider, apiKey, modelName } = await getUserAIConfig(c.env.DB, user.userId, c.env, 'article');

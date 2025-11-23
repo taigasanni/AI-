@@ -1443,19 +1443,36 @@ async function showSettings() {
             </p>
           </div>
 
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2">テンプレート内容</label>
-            <textarea id="decoration-template" rows="20" 
-                      class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
-                      placeholder="装飾ルールをMarkdown形式で記述..."></textarea>
-            <p class="text-xs text-gray-500 mt-2">
-              ※ 箇条書き、太字、ボックス（引用）、表などのMarkdown記法の使用例を記載してください
-            </p>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            <!-- エディター部分 -->
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">テンプレート内容</label>
+              <textarea id="decoration-template" rows="24" 
+                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 font-mono text-sm"
+                        placeholder="装飾ルールをMarkdown形式で記述..."></textarea>
+              <p class="text-xs text-gray-500 mt-2">
+                ※ 箇条書き、太字、ボックス（引用）、表などのMarkdown記法の使用例を記載してください
+              </p>
+            </div>
+
+            <!-- プレビュー部分 -->
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">プレビュー</label>
+              <div id="decoration-preview" class="w-full h-[600px] px-4 py-3 border rounded-lg bg-white overflow-y-auto article-content">
+                <p class="text-gray-400 text-center py-12">
+                  <i class="fas fa-eye text-4xl mb-4"></i><br>
+                  「プレビュー」ボタンをクリックして、装飾の見た目を確認できます
+                </p>
+              </div>
+            </div>
           </div>
           
           <div class="flex gap-3">
             <button onclick="loadDecorationTemplate()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
               <i class="fas fa-sync-alt mr-2"></i>再読み込み
+            </button>
+            <button onclick="previewDecorationTemplate()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+              <i class="fas fa-eye mr-2"></i>プレビュー
             </button>
             <button onclick="saveDecorationTemplate()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
               <i class="fas fa-save mr-2"></i>保存
@@ -2974,43 +2991,228 @@ async function saveDecorationTemplate() {
   }
 }
 
+// 装飾テンプレートをプレビュー
+function previewDecorationTemplate() {
+  const templateContent = document.getElementById('decoration-template').value;
+  
+  if (!templateContent) {
+    document.getElementById('decoration-preview').innerHTML = `
+      <p class="text-gray-400 text-center py-12">
+        <i class="fas fa-exclamation-circle text-4xl mb-4"></i><br>
+        テンプレート内容が空です
+      </p>
+    `;
+    return;
+  }
+  
+  // シンプルなMarkdownパーサー（基本的な記法のみ対応）
+  let html = templateContent
+    // コードブロック
+    .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    // 見出し
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // 太字
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // イタリック
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // インラインコード
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // 水平線
+    .replace(/^---$/gim, '<hr>')
+    // リンク
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    // 画像
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+    // 引用ブロック（複数行対応）
+    .replace(/^> (.*)$/gim, function(match, p1) {
+      return '<blockquote_line>' + p1 + '</blockquote_line>';
+    });
+  
+  // 引用ブロックを結合
+  html = html.replace(/(<blockquote_line>.*?<\/blockquote_line>\n?)+/g, function(match) {
+    const lines = match.match(/<blockquote_line>(.*?)<\/blockquote_line>/g);
+    const content = lines.map(line => line.replace(/<\/?blockquote_line>/g, '')).join('<br>');
+    return '<blockquote><p>' + content + '</p></blockquote>';
+  });
+  
+  // 番号付きリスト
+  const olMatches = html.match(/^\d+\. .*$/gim);
+  if (olMatches) {
+    const olItems = olMatches.map(item => '<li>' + item.replace(/^\d+\. /, '') + '</li>').join('');
+    html = html.replace(/^\d+\. .*$/gim, '').replace(/(<li>.*<\/li>)+/, '<ol>$&</ol>');
+    html = html.replace(/(<li>.*?<\/li>)+/g, function(match) {
+      return '<ol>' + match + '</ol>';
+    });
+  }
+  
+  // 箇条書きリスト
+  const ulMatches = html.match(/^- .*$/gim);
+  if (ulMatches) {
+    html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*?<\/li>\n?)+/g, function(match) {
+      return '<ul>' + match + '</ul>';
+    });
+  }
+  
+  // 表の処理
+  const tableRegex = /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g;
+  html = html.replace(tableRegex, function(match, header, rows) {
+    const headerCells = header.split('|').filter(cell => cell.trim()).map(cell => 
+      '<th>' + cell.trim() + '</th>'
+    ).join('');
+    
+    const rowLines = rows.trim().split('\n');
+    const bodyRows = rowLines.map(row => {
+      const cells = row.split('|').filter(cell => cell.trim()).map(cell => 
+        '<td>' + cell.trim() + '</td>'
+      ).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+    
+    return '<table><thead><tr>' + headerCells + '</tr></thead><tbody>' + bodyRows + '</tbody></table>';
+  });
+  
+  // 段落
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  
+  // 改行
+  html = html.replace(/\n/g, '<br>');
+  
+  // 空の段落を削除
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>\s*<br>\s*<\/p>/g, '');
+  
+  document.getElementById('decoration-preview').innerHTML = html;
+  
+  // プレビュー表示のフィードバック
+  const statusDiv = document.getElementById('decoration-status');
+  statusDiv.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle mr-1"></i>プレビューを更新しました</p>';
+  setTimeout(() => { statusDiv.innerHTML = ''; }, 2000);
+}
+
 // デフォルトテンプレートに戻す
 async function resetDecorationTemplate() {
   if (!confirm('デフォルトテンプレートに戻しますか？\n現在の内容は失われます。')) {
     return;
   }
   
-  const defaultTemplate = `# Markdown装飾ルール
+  const defaultTemplate = `# 記事装飾ルール - スタイルガイド
+
+このテンプレートは、AIが記事を生成する際に参照する装飾ルールです。読みやすく、視覚的に魅力的な記事を作成するために、以下の装飾を適切に使用してください。
+
+---
 
 ## 1. 箇条書き（リスト）
-重要なポイントを列挙する際は箇条書きを使用：
 
-- ポイント1
-- ポイント2
-- ポイント3
+重要なポイントを列挙する際は箇条書きを活用します。
 
-## 2. 重要な文章のマーカー（強調）
-重要な部分は**太字**で強調
+**使用例：**
 
-## 3. ボックス（引用）
-注意点や補足情報はボックスで囲む：
+- **ポイント1**: 重要な情報を簡潔に記載
+- **ポイント2**: 読者が理解しやすい表現を使用
+- **ポイント3**: 具体例を交えて説明
+
+**番号付きリスト（手順や順序がある場合）：**
+
+1. **ステップ1**: 最初に行うこと
+2. **ステップ2**: 次に実行する作業
+3. **ステップ3**: 最後の確認作業
+
+---
+
+## 2. 重要な文章の強調（太字マーカー）
+
+重要なキーワードやポイントは**太字**で強調し、読者の目を引きます。
+
+**使用例：**
+
+この方法により、**作業効率が3倍向上**し、**コストを50%削減**できます。
+
+---
+
+## 3. ボックス（引用ブロック）
+
+注意点、ヒント、補足情報などをボックスで囲み、視覚的に目立たせます。
+
+### ポイント・ヒントボックス（💡）
 
 > 💡 **ポイント**
-> ここに重要な補足情報を記載します。
+> 
+> ここに重要なヒントや補足情報を記載します。読者にとって役立つ追加情報を提供しましょう。
 
-> ⚠️ **注意**
-> 注意すべき内容を記載します。
+### 注意・警告ボックス（⚠️）
+
+> ⚠️ **注意事項**
+> 
+> ここに注意すべき内容や警告を記載します。間違いやすいポイントを事前に伝えることで、トラブルを防ぎます。
+
+### メリット・おすすめポイント（✅）
 
 > ✅ **メリット**
-> メリットや利点を記載します。
+> 
+> この方法のメリットや利点を具体的に説明します。読者が行動を起こすきっかけとなる情報です。
+
+### 一般的な引用・補足情報
+
+> **補足情報**
+> 
+> 一般的な補足説明や引用文はこの形式で記載します。
+
+---
 
 ## 4. 表（テーブル）
-比較や整理には表を使用：
 
-| 項目 | 内容 | 備考 |
-|------|------|------|
-| 項目1 | 説明1 | 補足1 |
-| 項目2 | 説明2 | 補足2 |`;
+比較、仕様、データの整理には表を使用します。
+
+**比較表の例：**
+
+| 項目 | プランA | プランB | プランC |
+|------|---------|---------|---------|
+| 価格 | 1,000円 | 3,000円 | 5,000円 |
+| 機能数 | 基本機能 | 標準機能 | 全機能 |
+| サポート | メール | メール・電話 | 24時間対応 |
+| おすすめ度 | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+
+**仕様表の例：**
+
+| 項目 | 内容 |
+|------|------|
+| サイズ | 幅100cm × 奥行50cm × 高さ80cm |
+| 重量 | 15kg |
+| 素材 | 天然木（オーク材） |
+| カラー | ナチュラル / ダークブラウン |
+| 価格 | 29,800円（税込） |
+
+---
+
+## 5. その他の装飾ルール
+
+### リンク
+重要なリンクは文脈に自然に組み込みます：
+[詳細はこちら](https://example.com)
+
+### インラインコード
+技術用語やコマンドは\`code\`で囲みます。
+
+### 画像の挿入
+視覚的な説明が必要な場合は画像を使用：
+![説明文](画像URL)
+
+---
+
+## 装飾使用のガイドライン
+
+1. **適度に使用する**: 装飾を使いすぎると逆に読みにくくなります
+2. **一貫性を保つ**: 同じ種類の情報には同じ装飾を使用
+3. **読者目線で**: 読者が理解しやすく、視覚的に快適な記事を目指す
+4. **重要度に応じて**: 本当に重要な部分だけを強調する
+
+---
+
+このルールに従って、読みやすく、視覚的に魅力的な記事を作成してください。`;
 
   document.getElementById('decoration-template').value = defaultTemplate;
   
