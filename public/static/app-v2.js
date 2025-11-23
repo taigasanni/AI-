@@ -1885,7 +1885,7 @@ async function showSettings() {
                     <i class="fas fa-info-circle mr-1"></i>変更が即座に反映されます
                   </p>
                 </div>
-                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 max-h-[calc(100vh-180px)] overflow-y-auto article-content">
+                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 max-h-[calc(100vh-140px)] overflow-y-auto article-content">
                   <!-- プレビュー内容はJavaScriptで動的に生成 -->
                 </div>
               </div>
