@@ -1876,7 +1876,7 @@ async function showSettings() {
 
             <!-- プレビューパネル -->
             <div class="xl:col-span-1">
-              <div class="sticky top-6 self-start">
+              <div class="sticky top-20 self-start">
                 <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-3">
                   <h3 class="text-lg font-bold text-gray-800 flex items-center">
                     <i class="fas fa-eye text-blue-600 mr-2"></i>リアルタイムプレビュー
@@ -1885,7 +1885,7 @@ async function showSettings() {
                     <i class="fas fa-info-circle mr-1"></i>変更が即座に反映されます
                   </p>
                 </div>
-                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 max-h-[calc(100vh-200px)] overflow-y-auto article-content">
+                <div id="decoration-style-preview" class="bg-white border-2 border-gray-200 rounded-lg shadow-lg p-6 max-h-[calc(100vh-180px)] overflow-y-auto article-content">
                   <!-- プレビュー内容はJavaScriptで動的に生成 -->
                 </div>
               </div>
