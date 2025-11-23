@@ -420,6 +420,7 @@ publicRoutes.get('/blog/:id', async (c) => {
               font-weight: bold;
               margin-top: 1em;
               margin-bottom: 0.5em;
+              scroll-margin-top: 100px; /* スクロール時のオフセット */
             }
             .article-content h2 {
               font-size: 1.5em;
@@ -428,12 +429,39 @@ publicRoutes.get('/blog/:id', async (c) => {
               margin-bottom: 0.5em;
               border-bottom: 2px solid #e5e7eb;
               padding-bottom: 0.3em;
+              scroll-margin-top: 100px; /* スクロール時のオフセット */
             }
             .article-content h3 {
               font-size: 1.25em;
               font-weight: bold;
               margin-top: 0.8em;
               margin-bottom: 0.4em;
+              scroll-margin-top: 100px; /* スクロール時のオフセット */
+            }
+            
+            /* 目次のスタイル */
+            #table-of-contents {
+              background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+              border: 2px solid #3b82f6;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+            }
+            
+            #table-of-contents h2 {
+              border-bottom: 2px solid #3b82f6 !important;
+              padding-bottom: 0.5rem !important;
+              margin: 0 0 1rem 0 !important;
+            }
+            
+            #toc-list a {
+              display: flex;
+              align-items: center;
+              text-decoration: none;
+              transition: all 0.2s;
+            }
+            
+            #toc-list a:hover {
+              transform: translateX(4px);
             }
             .article-content p {
               margin-bottom: 1em;
@@ -514,6 +542,17 @@ publicRoutes.get('/blog/:id', async (c) => {
                   <!-- アイキャッチ画像（タイトル直下） -->
                   <div id="featured-image-container"></div>
 
+                  <!-- 目次 -->
+                  <div id="table-of-contents" class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8" style="display: none;">
+                      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                          <i class="fas fa-list text-blue-600 mr-2"></i>
+                          目次
+                      </h2>
+                      <nav id="toc-list" class="space-y-2">
+                          <!-- 目次項目が自動生成されます -->
+                      </nav>
+                  </div>
+
                   <!-- 記事本文 -->
                   <div id="article-body" class="article-content text-gray-800">
                       <!-- Markdown will be rendered here -->
@@ -580,15 +619,87 @@ publicRoutes.get('/blog/:id', async (c) => {
               }
               
               // Markdownをレンダリング
-              // IMPORTANT: mangle: false, headerIds: false でHTMLタグをそのまま残す
+              // IMPORTANT: mangle: false, headerIds: true で見出しにIDを自動付与
               marked.setOptions({
                 breaks: true,
                 gfm: true,
                 mangle: false,
-                headerIds: false
+                headerIds: true // 見出しにIDを自動付与
               });
               const html = marked.parse(content);
               document.getElementById('article-body').innerHTML = html;
+              
+              // 目次を自動生成
+              generateTableOfContents();
+
+              // 目次を自動生成する関数
+              function generateTableOfContents() {
+                  const articleBody = document.getElementById('article-body');
+                  const tocContainer = document.getElementById('table-of-contents');
+                  const tocList = document.getElementById('toc-list');
+                  
+                  // H2とH3見出しを取得
+                  const headings = articleBody.querySelectorAll('h2, h3');
+                  
+                  if (headings.length === 0) {
+                      // 見出しがない場合は目次を非表示
+                      return;
+                  }
+                  
+                  // 見出しにIDを付与（markedがIDを生成しない場合のフォールバック）
+                  headings.forEach((heading, index) => {
+                      if (!heading.id) {
+                          heading.id = 'heading-' + index;
+                      }
+                  });
+                  
+                  // 目次項目を生成
+                  let tocHTML = '';
+                  headings.forEach((heading) => {
+                      const level = heading.tagName.toLowerCase();
+                      const text = heading.textContent;
+                      const id = heading.id;
+                      
+                      // H2とH3でインデントを変える
+                      const indent = level === 'h3' ? 'ml-6' : '';
+                      const fontSize = level === 'h3' ? 'text-sm' : 'text-base';
+                      const icon = level === 'h2' ? '<i class="fas fa-chevron-right text-blue-600 mr-2 text-xs"></i>' : '<i class="fas fa-angle-right text-gray-500 mr-2 text-xs"></i>';
+                      
+                      tocHTML += \`
+                          <a href="#\${id}" 
+                             class="block \${indent} \${fontSize} text-gray-700 hover:text-blue-600 hover:bg-blue-100 px-3 py-2 rounded transition-colors"
+                             onclick="smoothScrollTo('\${id}'); return false;">
+                              \${icon}
+                              <span>\${text}</span>
+                          </a>
+                      \`;
+                  });
+                  
+                  tocList.innerHTML = tocHTML;
+                  tocContainer.style.display = 'block';
+              }
+              
+              // スムーススクロール関数
+              function smoothScrollTo(targetId) {
+                  const target = document.getElementById(targetId);
+                  if (target) {
+                      // ヘッダー分のオフセット（80px）を考慮
+                      const offset = 80;
+                      const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - offset;
+                      
+                      window.scrollTo({
+                          top: targetPosition,
+                          behavior: 'smooth'
+                      });
+                      
+                      // 見出しをハイライト（一時的に背景色を変更）
+                      target.style.transition = 'background-color 0.3s';
+                      target.style.backgroundColor = '#fef3c7';
+                      setTimeout(() => {
+                          target.style.backgroundColor = '';
+                      }, 1500);
+                  }
+              }
 
               // シェア機能
               const currentUrl = window.location.href;
