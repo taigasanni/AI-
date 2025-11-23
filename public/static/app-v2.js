@@ -523,10 +523,15 @@ function renderCurrentStep() {
               oninput="updateCharCount()"
             >${escapeHtml(contentFlow.article)}</textarea>
             <div class="flex justify-between items-center mt-2">
-              <p class="text-sm text-gray-500">
-                <i class="fas fa-info-circle mr-1"></i>
-                文字数: <span id="char-count">${contentFlow.article.length}</span>文字
-              </p>
+              <div class="flex items-center gap-4">
+                <p class="text-sm text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  文字数: <span id="char-count">${contentFlow.article.length}</span>文字
+                </p>
+                <button onclick="openImageLibraryForArticle()" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                  <i class="fas fa-image mr-1"></i>画像を挿入
+                </button>
+              </div>
               <button onclick="copyToClipboard()" class="text-blue-600 hover:underline text-sm">
                 <i class="fas fa-copy mr-1"></i>クリップボードにコピー
               </button>
@@ -3131,5 +3136,232 @@ function removeOgImage() {
   renderArticleStep();
   
   showToast('アイキャッチ画像を削除しました');
+}
+
+// ===================================
+// 記事編集エリアへの画像挿入機能
+// ===================================
+
+/**
+ * 記事編集用に画像ライブラリモーダルを開く
+ */
+async function openImageLibraryForArticle() {
+  try {
+    // 画像ライブラリから画像を取得
+    const response = await fetch(`${API_BASE}/image-library`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      showToast('画像の読み込みに失敗しました', 'error');
+      return;
+    }
+
+    const images = data.data || [];
+    
+    // モーダルを作成
+    const modal = document.createElement('div');
+    modal.id = 'article-image-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    };
+
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto m-4" onclick="event.stopPropagation()">
+        <div class="sticky top-0 bg-white border-b p-6 z-10">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-images mr-2 text-blue-600"></i>
+              画像を選択
+            </h2>
+            <button onclick="document.getElementById('article-image-modal').remove()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          <div class="flex gap-4">
+            <button onclick="showImageLibraryUploadSection()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+              <i class="fas fa-upload mr-2"></i>新しい画像をアップロード
+            </button>
+          </div>
+          <div id="upload-section" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">画像ファイル</label>
+              <input type="file" id="article-image-file" accept="image/*" class="w-full px-4 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">画像名 (英数字、ハイフン、アンダースコアのみ)</label>
+              <input type="text" id="article-image-name" class="w-full px-4 py-2 border rounded-lg" placeholder="my-image">
+            </div>
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-bold mb-2">ALTテキスト</label>
+              <input type="text" id="article-image-alt" class="w-full px-4 py-2 border rounded-lg" placeholder="画像の説明">
+            </div>
+            <div class="flex gap-2">
+              <button onclick="uploadAndInsertImage()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-check mr-2"></i>アップロードして挿入
+              </button>
+              <button onclick="document.getElementById('upload-section').classList.add('hidden')" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          ${images.length === 0 ? `
+            <div class="text-center py-12">
+              <i class="fas fa-images text-6xl text-gray-300 mb-4"></i>
+              <p class="text-gray-600">画像ライブラリが空です</p>
+              <button onclick="showImageLibraryUploadSection()" class="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+                <i class="fas fa-upload mr-2"></i>最初の画像をアップロード
+              </button>
+            </div>
+          ` : `
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              ${images.map(img => `
+                <div class="border rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer" onclick="insertImageToArticle('${img.image_url}', '${img.alt_text || img.image_name}')">
+                  <img src="${img.image_url}" alt="${img.alt_text || img.image_name}" class="w-full h-48 object-cover">
+                  <div class="p-3 bg-white">
+                    <p class="text-sm font-medium text-gray-800 truncate">${img.image_name}</p>
+                    ${img.alt_text ? `<p class="text-xs text-gray-500 truncate">${img.alt_text}</p>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+  } catch (error) {
+    console.error('Open image library error:', error);
+    showToast('画像ライブラリを開けませんでした', 'error');
+  }
+}
+
+/**
+ * アップロードセクションを表示
+ */
+function showImageLibraryUploadSection() {
+  const uploadSection = document.getElementById('upload-section');
+  if (uploadSection) {
+    uploadSection.classList.remove('hidden');
+  }
+}
+
+/**
+ * 画像をアップロードして記事に挿入
+ */
+async function uploadAndInsertImage() {
+  const fileInput = document.getElementById('article-image-file');
+  const imageName = document.getElementById('article-image-name').value.trim();
+  const altText = document.getElementById('article-image-alt').value.trim();
+
+  if (!fileInput.files[0]) {
+    showToast('画像ファイルを選択してください', 'error');
+    return;
+  }
+
+  if (!imageName) {
+    showToast('画像名を入力してください', 'error');
+    return;
+  }
+
+  // 画像名のバリデーション
+  if (!/^[a-zA-Z0-9_-]+$/.test(imageName)) {
+    showToast('画像名は英数字、ハイフン、アンダースコアのみ使用できます', 'error');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  
+  // 画像をBase64に変換
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const base64Data = e.target.result;
+
+      const response = await fetch(`${API_BASE}/image-library`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          image_name: imageName,
+          image_data: base64Data,
+          alt_text: altText || imageName,
+          width: 800,
+          height: 450
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showToast('画像をアップロードしました', 'success');
+        
+        // 画像を記事に挿入
+        insertImageToArticle(data.data.image_url, altText || imageName);
+        
+        // モーダルを閉じる
+        document.getElementById('article-image-modal').remove();
+      } else {
+        showToast(data.error || '画像のアップロードに失敗しました', 'error');
+      }
+    } catch (error) {
+      console.error('Upload image error:', error);
+      showToast('画像のアップロードに失敗しました', 'error');
+    }
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/**
+ * 選択した画像を記事に挿入
+ */
+function insertImageToArticle(imageUrl, altText) {
+  const textarea = document.getElementById('article-edit');
+  if (!textarea) {
+    showToast('記事編集エリアが見つかりません', 'error');
+    return;
+  }
+
+  // カーソル位置を取得
+  const cursorPos = textarea.selectionStart;
+  const textBefore = textarea.value.substring(0, cursorPos);
+  const textAfter = textarea.value.substring(cursorPos);
+
+  // Markdown形式で画像を挿入
+  const imageMarkdown = `\n\n![${altText}](${imageUrl})\n\n`;
+  textarea.value = textBefore + imageMarkdown + textAfter;
+
+  // カーソル位置を画像の後ろに移動
+  const newCursorPos = cursorPos + imageMarkdown.length;
+  textarea.setSelectionRange(newCursorPos, newCursorPos);
+  textarea.focus();
+
+  // contentFlowを更新
+  contentFlow.article = textarea.value;
+
+  // 文字数カウントを更新
+  updateCharCount();
+
+  // モーダルを閉じる
+  const modal = document.getElementById('article-image-modal');
+  if (modal) {
+    modal.remove();
+  }
+
+  showToast('画像を挿入しました', 'success');
 }
 
