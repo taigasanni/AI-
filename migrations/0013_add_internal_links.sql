@@ -6,7 +6,6 @@
 -- from_article_idの記事のfrom_headingからto_article_idの記事のto_headingへリンクする
 CREATE TABLE IF NOT EXISTS internal_links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
   from_article_id INTEGER NOT NULL,
   from_heading TEXT NOT NULL,          -- リンク元の見出しテキスト
   from_heading_id TEXT,                -- リンク元の見出しID（anchor用）
@@ -23,8 +22,6 @@ CREATE TABLE IF NOT EXISTS internal_links (
 -- インデックス
 CREATE INDEX IF NOT EXISTS idx_internal_links_from_article ON internal_links(from_article_id);
 CREATE INDEX IF NOT EXISTS idx_internal_links_to_article ON internal_links(to_article_id);
-CREATE INDEX IF NOT EXISTS idx_internal_links_user ON internal_links(user_id);
-CREATE INDEX IF NOT EXISTS idx_internal_links_active ON internal_links(is_active);
 
 -- 記事の見出しキャッシュテーブル
 -- Markdownから抽出した見出しをキャッシュして高速アクセス
