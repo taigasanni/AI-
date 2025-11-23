@@ -3690,23 +3690,47 @@ async function saveDecorationStyles() {
 function updateDecorationPreview() {
   const styles = currentDecorationStyles || collectStylesFromInputs();
   
+  // 新しいネスト構造に対応
+  const h2 = styles.heading?.h2 || {};
+  const h3 = styles.heading?.h3 || {};
+  const list = styles.list || {};
+  const link = styles.link || {};
+  const image = styles.image || {};
+  
   // プレビューHTML
   const previewHTML = `
     <style id="decoration-preview-styles">
+      /* H2見出しスタイル */
       #decoration-style-preview h2 {
-        color: ${styles.heading.h2Color};
-        border-bottom: 2px solid ${styles.heading.h2Border};
-        padding-bottom: 8px;
+        color: ${h2.color || '#111827'};
+        background-color: ${h2.bgColor || '#ffffff'};
+        padding: ${h2.padding || '8'}px;
+        border-radius: ${h2.borderRadius || '0'}px;
         margin-bottom: 16px;
+        ${h2.borderPosition === 'bottom' ? `border-bottom: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'};` : ''}
+        ${h2.borderPosition === 'top' ? `border-top: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'};` : ''}
+        ${h2.borderPosition === 'left' ? `border-left: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'};` : ''}
+        ${h2.borderPosition === 'right' ? `border-right: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'};` : ''}
+        ${h2.borderPosition === 'all' ? `border: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'};` : ''}
+        ${h2.leftBorderWidth && parseInt(h2.leftBorderWidth) > 0 ? `border-left: ${h2.leftBorderWidth}px solid ${h2.leftBorderColor || '#3b82f6'} !important;` : ''}
       }
       
+      /* H3見出しスタイル */
       #decoration-style-preview h3 {
-        color: ${styles.heading.h3Color};
-        ${styles.heading.h3Style === 'left-border' ? `border-left: 4px solid ${styles.heading.h3Color}; padding-left: 12px;` : ''}
-        ${styles.heading.h3Style === 'background' ? `background: ${hexToRgba(styles.heading.h3Color, 0.1)}; padding: 8px 12px; border-radius: 4px;` : ''}
-        ${styles.heading.h3Style === 'underline' ? `border-bottom: 2px solid ${styles.heading.h3Color}; padding-bottom: 4px;` : ''}
+        color: ${h3.color || '#1f2937'};
+        background-color: ${h3.bgColor || '#ffffff'};
+        padding: ${h3.padding || '0'}px;
+        border-radius: ${h3.borderRadius || '0'}px;
+        margin-bottom: 12px;
+        ${h3.borderPosition === 'bottom' ? `border-bottom: ${h3.borderWidth || '0'}px solid ${h3.borderColor || '#1f2937'};` : ''}
+        ${h3.borderPosition === 'top' ? `border-top: ${h3.borderWidth || '0'}px solid ${h3.borderColor || '#1f2937'};` : ''}
+        ${h3.borderPosition === 'left' ? `border-left: ${h3.borderWidth || '0'}px solid ${h3.borderColor || '#1f2937'};` : ''}
+        ${h3.borderPosition === 'right' ? `border-right: ${h3.borderWidth || '0'}px solid ${h3.borderColor || '#1f2937'};` : ''}
+        ${h3.borderPosition === 'all' ? `border: ${h3.borderWidth || '0'}px solid ${h3.borderColor || '#1f2937'};` : ''}
+        ${h3.leftBorderWidth && parseInt(h3.leftBorderWidth) > 0 ? `border-left: ${h3.leftBorderWidth}px solid ${h3.leftBorderColor || '#3b82f6'} !important; padding-left: 12px;` : ''}
       }
       
+      /* ボックススタイル */
       #decoration-style-preview .box-point {
         background: ${styles.box.point.bg};
         border: 2px solid ${styles.box.point.border};
@@ -3737,6 +3761,7 @@ function updateDecorationPreview() {
         ${styles.box.style === 'shadow' ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);' : ''}
       }
       
+      /* ボタンスタイル */
       #decoration-style-preview .preview-button {
         background: ${styles.button.bg};
         color: ${styles.button.text};
@@ -3753,6 +3778,7 @@ function updateDecorationPreview() {
         background: ${styles.button.hover};
       }
       
+      /* テーブルスタイル */
       #decoration-style-preview table {
         border: 1px solid ${styles.table.border};
         border-collapse: collapse;
@@ -3783,18 +3809,74 @@ function updateDecorationPreview() {
         border: 2px solid ${styles.table.border};
       }` : ''}
       
+      /* マーカースタイル */
       #decoration-style-preview .marker {
         font-weight: 600;
         ${styles.marker.style === 'underline' ? `background: linear-gradient(transparent 65%, ${hexToRgba(styles.marker.color, 0.5)} 65%); padding: 0 3px;` : ''}
         ${styles.marker.style === 'background' ? `background: ${hexToRgba(styles.marker.color, 0.3)}; padding: 2px 6px; border-radius: 3px;` : ''}
       }
+      
+      /* リストスタイル */
+      #decoration-style-preview ul {
+        list-style: none;
+        padding-left: ${list.indent || '24'}px;
+      }
+      
+      #decoration-style-preview ul > li {
+        position: relative;
+        margin-bottom: ${list.spacing || '8'}px;
+      }
+      
+      #decoration-style-preview ul > li::before {
+        content: '';
+        position: absolute;
+        left: -16px;
+        top: 8px;
+        width: 6px;
+        height: 6px;
+        background-color: ${list.markerColor || '#6b7280'};
+        ${list.markerStyle === 'circle' ? 'border-radius: 50%;' : ''}
+        ${list.markerStyle === 'square' ? 'border-radius: 0;' : ''}
+        ${list.markerStyle === 'dash' ? 'width: 8px; height: 2px; top: 10px;' : ''}
+      }
+      
+      /* リンクスタイル */
+      #decoration-style-preview a {
+        color: ${link.color || '#3b82f6'};
+        ${link.underline === 'always' ? 'text-decoration: underline;' : ''}
+        ${link.underline === 'none' ? 'text-decoration: none;' : ''}
+        ${link.underline === 'hover' ? 'text-decoration: none;' : ''}
+        font-weight: ${link.weight === 'normal' ? '400' : link.weight === 'medium' ? '500' : link.weight === 'semibold' ? '600' : '700'};
+      }
+      
+      #decoration-style-preview a:hover {
+        color: ${link.hoverColor || '#2563eb'};
+        ${link.underline === 'hover' ? 'text-decoration: underline;' : ''}
+      }
+      
+      /* 画像スタイル */
+      #decoration-style-preview img {
+        border-radius: ${image.borderRadius || '4'}px;
+        ${image.shadow === 'small' ? 'box-shadow: 0 1px 3px rgba(0,0,0,0.1);' : ''}
+        ${image.shadow === 'medium' ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1);' : ''}
+        ${image.shadow === 'large' ? 'box-shadow: 0 10px 15px rgba(0,0,0,0.1);' : ''}
+        ${image.border === 'yes' && image.borderWidth ? `border: ${image.borderWidth}px solid ${image.borderColor || '#e5e7eb'};` : ''}
+      }
     </style>
     
     <h2>見出しスタイル (H2)</h2>
-    <p>これはH2見出しのプレビューです。下線の色も確認できます。</p>
+    <p>これはH2見出しのプレビューです。背景色、パディング、ボーダー位置などをカスタマイズできます。</p>
     
     <h3>見出しスタイル (H3)</h3>
-    <p>これはH3見出しのプレビューです。選択したスタイルが適用されます。</p>
+    <p>これはH3見出しのプレビューです。左ボーダーや背景色を設定できます。</p>
+    
+    <ul>
+      <li>リストアイテム1</li>
+      <li>リストアイテム2</li>
+      <li>リストアイテム3</li>
+    </ul>
+    
+    <p>詳しくは<a href="#">こちらのリンク</a>をご覧ください。</p>
     
     <div class="box-point">
       <strong>💡 ポイント</strong><br>
