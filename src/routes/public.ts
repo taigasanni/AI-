@@ -188,10 +188,10 @@ function generateBlogCard(link: any): string {
  * GET / - トップページ（ブログ一覧を表示）
  */
 publicRoutes.get('/', async (c) => {
-  // 全ユーザーの公開記事を表示
+  // 全ユーザーの公開記事を表示（アイキャッチ画像も取得）
   const articles = await c.env.DB.prepare(
     `SELECT a.id, a.title, a.meta_description, a.content, a.target_keywords, 
-            a.published_at, a.created_at, u.name as author_name
+            a.og_image_url, a.published_at, a.created_at, u.name as author_name
      FROM articles a 
      JOIN users u ON a.user_id = u.id 
      WHERE a.status = 'published'
@@ -199,7 +199,36 @@ publicRoutes.get('/', async (c) => {
      LIMIT 20`
   ).all();
 
-  const articlesList = articles.results || [];
+  // 見出し画像を取得（アイキャッチのフォールバック用）
+  const headingImages = await c.env.DB.prepare(
+    `SELECT hi.*, il.image_url, il.alt_text
+     FROM heading_images hi
+     JOIN image_library il ON hi.image_name = il.image_name`
+  ).all();
+
+  // 各記事のアイキャッチ画像を決定
+  const articlesList = (articles.results || []).map((article: any) => {
+    let featuredImageUrl = article.og_image_url;
+    
+    // og_image_urlがない場合、最初のH2画像を使用
+    if (!featuredImageUrl && article.content) {
+      const h2Match = article.content.match(/^##\s+(.+)$/m);
+      if (h2Match && headingImages.results) {
+        const firstH2Text = h2Match[1].trim();
+        const matchingImage = (headingImages.results as any[]).find(
+          (img: any) => img.heading_text === firstH2Text
+        );
+        if (matchingImage) {
+          featuredImageUrl = matchingImage.image_url;
+        }
+      }
+    }
+    
+    return {
+      ...article,
+      featured_image_url: featuredImageUrl
+    };
+  });
 
   return c.html(`
     <!DOCTYPE html>
@@ -232,6 +261,14 @@ publicRoutes.get('/', async (c) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${articlesList.map((article: any) => `
                         <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
+                            ${article.featured_image_url ? `
+                                <a href="/blog/${article.id}">
+                                    <img src="${article.featured_image_url}" 
+                                         alt="${article.title}" 
+                                         class="w-full h-48 object-cover"
+                                         loading="lazy">
+                                </a>
+                            ` : ''}
                             <div class="p-6">
                                 <h2 class="text-xl font-bold text-gray-800 mb-3 line-clamp-2">
                                     ${article.title}
@@ -613,7 +650,36 @@ publicRoutes.get('/blog', async (c) => {
        LIMIT 50`
     ).all();
 
-    const articleList = articles.results || [];
+    // 見出し画像を取得（アイキャッチのフォールバック用）
+    const headingImages = await c.env.DB.prepare(
+      `SELECT hi.*, il.image_url, il.alt_text
+       FROM heading_images hi
+       JOIN image_library il ON hi.image_name = il.image_name`
+    ).all();
+
+    // 各記事のアイキャッチ画像を決定
+    const articleList = (articles.results || []).map((article: any) => {
+      let featuredImageUrl = article.og_image_url;
+      
+      // og_image_urlがない場合、最初のH2画像を使用
+      if (!featuredImageUrl && article.content) {
+        const h2Match = article.content.match(/^##\s+(.+)$/m);
+        if (h2Match && headingImages.results) {
+          const firstH2Text = h2Match[1].trim();
+          const matchingImage = (headingImages.results as any[]).find(
+            (img: any) => img.heading_text === firstH2Text
+          );
+          if (matchingImage) {
+            featuredImageUrl = matchingImage.image_url;
+          }
+        }
+      }
+      
+      return {
+        ...article,
+        featured_image_url: featuredImageUrl
+      };
+    });
 
     return c.html(`
       <!DOCTYPE html>
@@ -647,7 +713,15 @@ publicRoutes.get('/blog', async (c) => {
               ` : `
                 <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     ${articleList.map((article: any) => `
-                      <article class="bg-white rounded-lg shadow hover:shadow-lg transition">
+                      <article class="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
+                          ${article.featured_image_url ? `
+                              <a href="/blog/${article.slug || article.id}">
+                                  <img src="${article.featured_image_url}" 
+                                       alt="${article.title}" 
+                                       class="w-full h-48 object-cover"
+                                       loading="lazy">
+                              </a>
+                          ` : ''}
                           <a href="/blog/${article.slug || article.id}" class="block p-6">
                               <h2 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600">
                                   ${article.title}
