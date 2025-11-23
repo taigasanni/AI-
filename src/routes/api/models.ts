@@ -11,20 +11,26 @@ const models = new Hono<{ Bindings: Env }>();
 models.use('*', authMiddleware);
 
 // 利用可能なモデルリスト
-// 注: Claude 3.5 SonnetとClaude 3 Sonnetは一部のアカウントでのみ利用可能
 const AVAILABLE_MODELS = {
   openai: [
-    { id: 'gpt-4o', name: 'GPT-4o (最新・高性能)', description: '最新で最も高性能なモデル。複雑な記事生成に最適' },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (高速・コスパ良)', description: '高速で低コスト。日常的な記事生成に最適' },
-    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: '高性能でバランスの取れたモデル' },
+    { id: 'gpt-4o', name: 'GPT-4o (最新・高性能)', description: '最新で最も高性能なモデル。複雑な記事生成に最適。最大4096トークン出力' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (高速・コスパ良)', description: '高速で低コスト。日常的な記事生成に最適。最大16384トークン出力' },
+    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: '高性能でバランスの取れたモデル。最大4096トークン出力' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (最速)', description: '最も高速で低コスト。シンプルな記事向け' }
   ],
   anthropic: [
-    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus (最高性能・推奨)', description: '最も高性能。長文記事や複雑な内容に最適。このAPIキーで利用可能' },
-    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (高速・低コスト)', description: '最も高速で低コスト。シンプルな記事向け。確実に動作' },
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2 (最新・要確認)', description: '2024年10月版。一部アカウントでのみ利用可能' },
-    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet v1 (要確認)', description: '2024年6月版。一部アカウントでのみ利用可能' },
-    { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet (要確認)', description: '一部アカウントでのみ利用可能' }
+    // Claude 4.x シリーズ（最新・最大90Kトークン出力）
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (最高性能・超長文対応)', description: '最高性能。最大90Kトークン出力。超長文記事に最適', maxTokens: 90000 },
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (高性能・長文対応)', description: '高性能でコスパ良。最大90Kトークン出力。長文記事に最適', maxTokens: 90000 },
+    { id: 'claude-haiku-4-20250514', name: 'Claude Haiku 4 (高速・長文対応)', description: '高速で低コスト。最大90Kトークン出力。長文記事対応', maxTokens: 90000 },
+    
+    // Claude 3.x シリーズ
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2 (推奨)', description: '2024年10月版。最大16Kトークン出力。バランスが良い', maxTokens: 16000 },
+    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet v1', description: '2024年6月版。最大16Kトークン出力', maxTokens: 16000 },
+    { id: 'claude-sonnet-3-7-20250219', name: 'Claude Sonnet 3.7', description: '最大16Kトークン出力。高性能', maxTokens: 16000 },
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: '最大20Kトークン出力。高速', maxTokens: 20000 },
+    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: '最高性能。最大20Kトークン出力', maxTokens: 20000 },
+    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku (デフォルト)', description: '最も高速で低コスト。確実に動作。最大20Kトークン出力', maxTokens: 20000 }
   ]
 };
 
@@ -126,12 +132,12 @@ models.post('/preferences/reset', async (c) => {
       'DELETE FROM model_preferences WHERE user_id = ?'
     ).bind(user.userId).run();
 
-    // デフォルト設定を再作成
+    // デフォルト設定を再作成（Claude 3.5 Sonnet v2を推奨）
     const useCases = ['outline', 'article', 'rewrite', 'seo', 'assist'];
     for (const useCase of useCases) {
       await c.env.DB.prepare(
         'INSERT INTO model_preferences (user_id, provider, model_name, use_case) VALUES (?, ?, ?, ?)'
-      ).bind(user.userId, 'anthropic', 'claude-3-haiku-20240307', useCase).run();
+      ).bind(user.userId, 'anthropic', 'claude-3-5-sonnet-20241022', useCase).run();
     }
 
     return c.json<APIResponse>({

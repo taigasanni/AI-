@@ -12,6 +12,46 @@ const generate = new Hono<{ Bindings: Env }>();
 
 generate.use('*', authMiddleware);
 
+// ヘルパー: モデルに応じた最大トークン数を取得
+function getMaxTokensForModel(modelName: string): number {
+  // Claude 4.x シリーズ（最大90K）
+  if (modelName.includes('claude-opus-4') || 
+      modelName.includes('claude-sonnet-4') || 
+      modelName.includes('claude-haiku-4')) {
+    return 90000;
+  }
+  
+  // Claude 3.5 Haiku（最大20K）
+  if (modelName.includes('claude-3-5-haiku')) {
+    return 20000;
+  }
+  
+  // Claude 3.5 Sonnet, Claude Sonnet 3.7（最大16K）
+  if (modelName.includes('claude-3-5-sonnet') || 
+      modelName.includes('claude-sonnet-3-7')) {
+    return 16000;
+  }
+  
+  // Claude 3 Opus, Claude 3 Haiku（最大20K）
+  if (modelName.includes('claude-3-opus') || 
+      modelName.includes('claude-3-haiku')) {
+    return 20000;
+  }
+  
+  // GPT-4o-mini（最大16K）
+  if (modelName.includes('gpt-4o-mini')) {
+    return 16000;
+  }
+  
+  // その他のGPTモデル（デフォルト4K）
+  if (modelName.includes('gpt')) {
+    return 4096;
+  }
+  
+  // デフォルト（Claude 3系）
+  return 4096;
+}
+
 // ヘルパー: 装飾テンプレートを取得
 async function getDecorationTemplate(db: D1Database, userId: number): Promise<string> {
   const template = await db.prepare(
@@ -276,6 +316,11 @@ generate.post('/article', async (c) => {
 
     console.log(`Using AI provider: ${provider}, model: ${modelName}`);
 
+    // モデルに応じた最大トークン数を取得
+    const maxTokens = getMaxTokensForModel(modelName || 'claude-3-haiku-20240307');
+    
+    console.log(`Using maxTokens: ${maxTokens} for model: ${modelName}`);
+
     const generatedArticle = await generateAIContent({
       provider,
       apiKey,
@@ -291,7 +336,7 @@ generate.post('/article', async (c) => {
         }
       ],
       temperature: 0.7,
-      maxTokens: 4096 // Claude 3 Haikuの最大値
+      maxTokens
     });
 
     // 生成された記事の文字数をカウント
@@ -388,6 +433,9 @@ ${original_content}
 
 リライト後の記事:`;
 
+    // モデルに応じた最大トークン数を取得
+    const maxTokens = getMaxTokensForModel(modelName || 'claude-3-haiku-20240307');
+
     const rewrittenArticle = await generateAIContent({
       provider,
       apiKey,
@@ -403,7 +451,7 @@ ${original_content}
         }
       ],
       temperature: 0.7,
-      maxTokens: 4096
+      maxTokens
     });
 
     // 文字数カウントと警告
