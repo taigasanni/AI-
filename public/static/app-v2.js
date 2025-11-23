@@ -529,10 +529,14 @@ function renderCurrentStep() {
             >${escapeHtml(contentFlow.article)}</textarea>
             <div class="flex justify-between items-center mt-2">
               <div class="flex items-center gap-4">
-                <p class="text-sm text-gray-500">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  文字数: <span id="char-count">${contentFlow.article.length}</span>文字
-                </p>
+                <div class="text-sm">
+                  <i class="fas fa-chart-bar mr-1"></i>
+                  文字数: <span id="char-count" class="font-bold">${contentFlow.article.length}</span>文字
+                  ${contentFlow.targetChars ? `
+                    / 目標: ${contentFlow.targetChars}文字
+                    <span id="char-percentage" class="${getCharCountColor(contentFlow.charCountPercentage)}">(${contentFlow.charCountPercentage}%)</span>
+                  ` : ''}
+                </div>
                 <button onclick="openImageLibraryForArticle()" class="text-green-600 hover:text-green-800 text-sm font-medium">
                   <i class="fas fa-image mr-1"></i>画像を挿入
                 </button>
@@ -541,6 +545,14 @@ function renderCurrentStep() {
                 <i class="fas fa-copy mr-1"></i>クリップボードにコピー
               </button>
             </div>
+            ${contentFlow.warning ? `
+            <div class="mt-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+              <p class="text-yellow-800 text-sm">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                ${contentFlow.warning}
+              </p>
+            </div>
+            ` : ''}
           </div>
         </div>
         
@@ -784,12 +796,23 @@ async function generateArticle() {
     
     if (data.success) {
       contentFlow.article = data.data.content;
+      contentFlow.charCount = data.data.charCount;
+      contentFlow.targetChars = data.data.targetChars;
+      contentFlow.charCountPercentage = data.data.charCountPercentage;
+      contentFlow.warning = data.data.warning;
       
       // SEO項目も自動生成
       await generateSEOFields();
       
       contentFlow.step = 'article';
       renderCurrentStep();
+      
+      // 文字数警告がある場合は表示
+      if (data.data.warning) {
+        setTimeout(() => {
+          alert(data.data.warning);
+        }, 500);
+      }
     } else {
       const errorMsg = data.error || '記事生成に失敗しました';
       alert(`エラー: ${errorMsg}\n\n設定画面でAI APIキー（OpenAIまたはAnthropic）を確認してください。`);
@@ -842,8 +865,19 @@ async function rewriteArticle() {
     
     if (data.success) {
       contentFlow.article = data.data.content;
+      contentFlow.charCount = data.data.charCount;
+      contentFlow.targetChars = data.data.targetChars;
+      contentFlow.charCountPercentage = data.data.charCountPercentage;
+      contentFlow.warning = data.data.warning;
       contentFlow.step = 'rewrite';
       renderCurrentStep();
+      
+      // 文字数警告がある場合は表示
+      if (data.data.warning) {
+        setTimeout(() => {
+          alert(data.data.warning);
+        }, 500);
+      }
     } else {
       alert(data.error || 'リライトに失敗しました');
       contentFlow.step = 'article';
@@ -2193,8 +2227,29 @@ function renderPreview() {
 function updateCharCount() {
   const textarea = document.getElementById('article-edit');
   const countEl = document.getElementById('char-count');
+  const percentageEl = document.getElementById('char-percentage');
+  
   if (textarea && countEl) {
-    countEl.textContent = textarea.value.length;
+    const currentCount = textarea.value.length;
+    countEl.textContent = currentCount;
+    
+    // 目標文字数がある場合、パーセンテージを更新
+    if (contentFlow.targetChars && percentageEl) {
+      const percentage = Math.round((currentCount / contentFlow.targetChars) * 100);
+      percentageEl.textContent = `(${percentage}%)`;
+      percentageEl.className = getCharCountColor(percentage);
+    }
+  }
+}
+
+// 文字数達成率に応じた色クラスを返す
+function getCharCountColor(percentage) {
+  if (percentage >= 90 && percentage <= 110) {
+    return 'text-green-600 font-bold'; // 目標達成
+  } else if (percentage >= 80 && percentage <= 120) {
+    return 'text-yellow-600 font-bold'; // 許容範囲
+  } else {
+    return 'text-red-600 font-bold'; // 要改善
   }
 }
 

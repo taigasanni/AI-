@@ -109,11 +109,24 @@ generate.post('/outline', async (c) => {
     const defaultParams = prompt.params ? JSON.parse(prompt.params) : {};
     const mergedParams = { ...defaultParams, ...params };
 
+    // 文字数目標を取得
+    const targetChars = mergedParams.max_chars || '3000';
+
     // プロンプトテンプレートに変数を埋め込み
     let finalPrompt = prompt.body
       .replace(/\{\{keyword\}\}/g, keyword)
-      .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
+      .replace(/\{\{max_chars\}\}/g, targetChars)
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
+
+    // アウトラインに文字数目標を明示
+    finalPrompt += `
+
+## 📊 文字数目標
+
+最終的な記事の目標文字数: **${targetChars}文字**
+
+この文字数を達成できる、十分に詳細な構成を作成してください。
+各セクションに具体的な内容と十分なボリュームを確保してください。`;
 
     // ユーザーのAI設定を取得
     const { provider, apiKey, modelName } = await getUserAIConfig(c.env.DB, user.userId, c.env, 'outline');
@@ -210,12 +223,43 @@ generate.post('/article', async (c) => {
     // 装飾テンプレートを取得
     const decorationTemplate = await getDecorationTemplate(c.env.DB, user.userId);
 
+    // 文字数目標を取得
+    const targetChars = mergedParams.max_chars || '3000';
+    const minChars = Math.floor(parseInt(targetChars) * 0.9); // 目標の90%
+    const maxChars = Math.floor(parseInt(targetChars) * 1.1); // 目標の110%
+
     // プロンプトテンプレートに変数を埋め込み
     let finalPrompt = prompt.body
       .replace(/\{\{keyword\}\}/g, keyword)
       .replace(/\{\{outline\}\}/g, outlineStr)
-      .replace(/\{\{max_chars\}\}/g, mergedParams.max_chars || '3000')
+      .replace(/\{\{max_chars\}\}/g, targetChars)
       .replace(/\{\{tone\}\}/g, mergedParams.tone || 'professional');
+
+    // 文字数厳守の強い指示を追加
+    finalPrompt += `
+
+## ⚠️ 【重要】文字数制約 - 必ず守ってください
+
+以下の文字数制約を**厳格に**守ってください：
+
+📊 **文字数要件**
+- 目標文字数: ${targetChars}文字
+- 最小文字数: ${minChars}文字（これ以下は不可）
+- 最大文字数: ${maxChars}文字（これ以上は不可）
+- 許容範囲: ${targetChars}文字の±10%
+
+⚠️ **重要な注意事項**
+1. 記事の文字数が${minChars}文字未満の場合は、以下を追加してください：
+   - 各セクションに具体例や詳細説明を追加
+   - 実践的なアドバイスや Tips を追加
+   - FAQ セクションを追加
+   - まとめセクションを充実させる
+
+2. 文字数を水増しするのではなく、**価値ある情報を追加**してください
+
+3. 記事生成後、必ず文字数を確認してください
+
+4. 文字数が不足している場合は、より詳しい説明や追加情報で補ってください`;
 
     // 装飾テンプレートが存在する場合は追加
     if (decorationTemplate) {
@@ -241,7 +285,7 @@ generate.post('/article', async (c) => {
       messages: [
         {
           role: 'system',
-          content: 'You are a professional web content writer specializing in SEO articles.'
+          content: 'You are a professional web content writer specializing in SEO articles. You MUST strictly follow the word count requirements provided in the user prompt.'
         },
         {
           role: 'user',
@@ -249,13 +293,30 @@ generate.post('/article', async (c) => {
         }
       ],
       temperature: 0.7,
-      maxTokens: 4000
+      maxTokens: 8000 // 文字数を増やすために maxTokens を増加
     });
+
+    // 生成された記事の文字数をカウント
+    const charCount = generatedArticle.length;
+    const targetCharsNum = parseInt(targetChars);
+    const charCountPercentage = Math.round((charCount / targetCharsNum) * 100);
+    
+    // 文字数不足の警告チェック
+    let warning = null;
+    if (charCount < minChars) {
+      warning = `⚠️ 生成された記事は${charCount}文字で、目標文字数${targetChars}文字に対して不足しています（達成率: ${charCountPercentage}%）。記事を編集して内容を追加することをお勧めします。`;
+    } else if (charCount > maxChars) {
+      warning = `⚠️ 生成された記事は${charCount}文字で、目標文字数${targetChars}文字を超過しています（達成率: ${charCountPercentage}%）。`;
+    }
 
     return c.json<APIResponse>({
       success: true,
       data: {
         content: generatedArticle,
+        charCount,
+        targetChars: targetCharsNum,
+        charCountPercentage,
+        warning,
         prompt_used: {
           type: prompt.type,
           version: prompt.version,
@@ -336,7 +397,7 @@ ${original_content}
       messages: [
         {
           role: 'system',
-          content: 'You are a professional web content editor and SEO specialist.'
+          content: 'You are a professional web content editor and SEO specialist. You MUST strictly follow the word count requirements.'
         },
         {
           role: 'user',
@@ -344,13 +405,30 @@ ${original_content}
         }
       ],
       temperature: 0.7,
-      maxTokens: 4000
+      maxTokens: 8000
     });
+
+    // 文字数カウントと警告
+    const charCount = rewrittenArticle.length;
+    const minChars = Math.floor(maxChars * 0.9);
+    const maxCharsLimit = Math.floor(maxChars * 1.1);
+    const charCountPercentage = Math.round((charCount / maxChars) * 100);
+    
+    let warning = null;
+    if (charCount < minChars) {
+      warning = `⚠️ リライト後の記事は${charCount}文字で、目標文字数${maxChars}文字に対して不足しています（達成率: ${charCountPercentage}%）。`;
+    } else if (charCount > maxCharsLimit) {
+      warning = `⚠️ リライト後の記事は${charCount}文字で、目標文字数${maxChars}文字を超過しています（達成率: ${charCountPercentage}%）。`;
+    }
 
     return c.json<APIResponse>({
       success: true,
       data: {
-        content: rewrittenArticle
+        content: rewrittenArticle,
+        charCount,
+        targetChars: maxChars,
+        charCountPercentage,
+        warning
       }
     });
 
