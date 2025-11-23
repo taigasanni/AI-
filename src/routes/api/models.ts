@@ -19,10 +19,10 @@ const AVAILABLE_MODELS = {
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (最速)', description: '最も高速で低コスト。シンプルな記事向け' }
   ],
   anthropic: [
-    // Claude 4.x シリーズ（最新・最大90Kトークン出力）
-    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (最高性能・超長文対応)', description: '最高性能。最大90Kトークン出力（約67,500文字）。超長文記事に最適' },
-    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (推奨・長文対応)', description: '高性能でコスパ良。最大90Kトークン出力（約67,500文字）。長文記事に最適' },
-    { id: 'claude-haiku-4-20250514', name: 'Claude Haiku 4 (高速・長文対応)', description: '高速で低コスト。最大90Kトークン出力（約67,500文字）。長文記事対応' },
+    // Claude 4.x シリーズ（最新・長文対応）
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 (最高性能・超長文対応)', description: '最高性能。最大32Kトークン出力（約24,000文字）。超長文記事に最適' },
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (推奨・長文対応)', description: '高性能でコスパ良。最大16Kトークン出力（約12,000文字）。長文記事に最適' },
+    { id: 'claude-haiku-4-20250514', name: 'Claude Haiku 4 (高速・長文対応)', description: '高速で低コスト。最大16Kトークン出力（約12,000文字）。長文記事対応' },
     
     // Claude 3.5/3.7 シリーズ（最大8Kトークン出力）
     { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2', description: '2024年10月版。最大8Kトークン出力（約6,000文字）。バランスが良い' },

@@ -14,11 +14,13 @@ generate.use('*', authMiddleware);
 
 // ヘルパー: モデルに応じた最大トークン数を取得
 function getMaxTokensForModel(modelName: string): number {
-  // Claude 4.x シリーズ（最大90K）
-  if (modelName.includes('claude-opus-4') || 
-      modelName.includes('claude-sonnet-4') || 
-      modelName.includes('claude-haiku-4')) {
-    return 90000;
+  // Claude 4.x シリーズ
+  // Opus 4: 最大32K, Sonnet 4: 最大16K, Haiku 4: 最大16K
+  if (modelName.includes('claude-opus-4')) {
+    return 32000;
+  }
+  if (modelName.includes('claude-sonnet-4') || modelName.includes('claude-haiku-4')) {
+    return 16000;
   }
   
   // Claude 3.5 Haiku（最大8K）
