@@ -3493,50 +3493,108 @@ async function loadDecorationStyles() {
 
 // スタイル設定を入力フィールドに反映
 function applyStylesToInputs() {
-  // 見出し
-  document.getElementById('heading-h2-color').value = currentDecorationStyles.heading.h2Color;
-  document.getElementById('heading-h2-border').value = currentDecorationStyles.heading.h2Border;
-  document.getElementById('heading-h3-color').value = currentDecorationStyles.heading.h3Color;
-  document.getElementById('heading-h3-style').value = currentDecorationStyles.heading.h3Style;
+  const s = currentDecorationStyles;
+  
+  // H2見出し
+  document.getElementById('heading-h2-color').value = s.heading.h2.color;
+  document.getElementById('heading-h2-bg').value = s.heading.h2.bgColor;
+  document.getElementById('heading-h2-padding').value = s.heading.h2.padding;
+  document.getElementById('heading-h2-border-position').value = s.heading.h2.borderPosition;
+  document.getElementById('heading-h2-border-color').value = s.heading.h2.borderColor;
+  document.getElementById('heading-h2-border-width').value = s.heading.h2.borderWidth;
+  document.getElementById('heading-h2-radius').value = s.heading.h2.borderRadius;
+  document.getElementById('heading-h2-left-border-color').value = s.heading.h2.leftBorderColor;
+  document.getElementById('heading-h2-left-border-width').value = s.heading.h2.leftBorderWidth;
+  
+  // H3見出し
+  document.getElementById('heading-h3-color').value = s.heading.h3.color;
+  document.getElementById('heading-h3-bg').value = s.heading.h3.bgColor;
+  document.getElementById('heading-h3-padding').value = s.heading.h3.padding;
+  document.getElementById('heading-h3-border-position').value = s.heading.h3.borderPosition;
+  document.getElementById('heading-h3-border-color').value = s.heading.h3.borderColor;
+  document.getElementById('heading-h3-border-width').value = s.heading.h3.borderWidth;
+  document.getElementById('heading-h3-radius').value = s.heading.h3.borderRadius;
+  document.getElementById('heading-h3-left-border-color').value = s.heading.h3.leftBorderColor;
+  document.getElementById('heading-h3-left-border-width').value = s.heading.h3.leftBorderWidth;
   
   // ボックス
-  document.getElementById('box-point-bg').value = currentDecorationStyles.box.point.bg;
-  document.getElementById('box-point-border').value = currentDecorationStyles.box.point.border;
-  document.getElementById('box-point-text').value = currentDecorationStyles.box.point.text;
-  document.getElementById('box-warning-bg').value = currentDecorationStyles.box.warning.bg;
-  document.getElementById('box-warning-border').value = currentDecorationStyles.box.warning.border;
-  document.getElementById('box-warning-text').value = currentDecorationStyles.box.warning.text;
-  document.getElementById('box-success-bg').value = currentDecorationStyles.box.success.bg;
-  document.getElementById('box-success-border').value = currentDecorationStyles.box.success.border;
-  document.getElementById('box-success-text').value = currentDecorationStyles.box.success.text;
-  document.getElementById('box-style').value = currentDecorationStyles.box.style;
+  document.getElementById('box-point-bg').value = s.box.point.bg;
+  document.getElementById('box-point-border').value = s.box.point.border;
+  document.getElementById('box-point-text').value = s.box.point.text;
+  document.getElementById('box-warning-bg').value = s.box.warning.bg;
+  document.getElementById('box-warning-border').value = s.box.warning.border;
+  document.getElementById('box-warning-text').value = s.box.warning.text;
+  document.getElementById('box-success-bg').value = s.box.success.bg;
+  document.getElementById('box-success-border').value = s.box.success.border;
+  document.getElementById('box-success-text').value = s.box.success.text;
+  document.getElementById('box-style').value = s.box.style;
   
   // ボタン
-  document.getElementById('button-bg').value = currentDecorationStyles.button.bg;
-  document.getElementById('button-text').value = currentDecorationStyles.button.text;
-  document.getElementById('button-hover').value = currentDecorationStyles.button.hover;
-  document.getElementById('button-style').value = currentDecorationStyles.button.style;
+  document.getElementById('button-bg').value = s.button.bg;
+  document.getElementById('button-text').value = s.button.text;
+  document.getElementById('button-hover').value = s.button.hover;
+  document.getElementById('button-style').value = s.button.style;
   
   // テーブル
-  document.getElementById('table-header-bg').value = currentDecorationStyles.table.headerBg;
-  document.getElementById('table-header-text').value = currentDecorationStyles.table.headerText;
-  document.getElementById('table-border').value = currentDecorationStyles.table.border;
-  document.getElementById('table-stripe-bg').value = currentDecorationStyles.table.stripeBg;
-  document.getElementById('table-style').value = currentDecorationStyles.table.style;
+  document.getElementById('table-header-bg').value = s.table.headerBg;
+  document.getElementById('table-header-text').value = s.table.headerText;
+  document.getElementById('table-border').value = s.table.border;
+  document.getElementById('table-stripe-bg').value = s.table.stripeBg;
+  document.getElementById('table-style').value = s.table.style;
   
   // マーカー
-  document.getElementById('marker-color').value = currentDecorationStyles.marker.color;
-  document.getElementById('marker-style').value = currentDecorationStyles.marker.style;
+  document.getElementById('marker-color').value = s.marker.color;
+  document.getElementById('marker-style').value = s.marker.style;
+  
+  // リスト
+  document.getElementById('list-marker-color').value = s.list.markerColor;
+  document.getElementById('list-marker-style').value = s.list.markerStyle;
+  document.getElementById('list-spacing').value = s.list.spacing;
+  document.getElementById('list-indent').value = s.list.indent;
+  
+  // リンク
+  document.getElementById('link-color').value = s.link.color;
+  document.getElementById('link-hover-color').value = s.link.hoverColor;
+  document.getElementById('link-underline').value = s.link.underline;
+  document.getElementById('link-weight').value = s.link.weight;
+  
+  // 画像
+  document.getElementById('image-radius').value = s.image.borderRadius;
+  document.getElementById('image-shadow').value = s.image.shadow.toString();
+  document.getElementById('image-border').value = s.image.border.toString();
+  document.getElementById('image-border-color').value = s.image.borderColor;
+  document.getElementById('image-border-width').value = s.image.borderWidth;
+  
+  // カスタムCSS
+  document.getElementById('custom-css').value = s.customCSS || '';
 }
 
 // 入力フィールドからスタイルを収集
 function collectStylesFromInputs() {
   return {
     heading: {
-      h2Color: document.getElementById('heading-h2-color').value,
-      h2Border: document.getElementById('heading-h2-border').value,
-      h3Color: document.getElementById('heading-h3-color').value,
-      h3Style: document.getElementById('heading-h3-style').value
+      h2: {
+        color: document.getElementById('heading-h2-color').value,
+        bgColor: document.getElementById('heading-h2-bg').value,
+        borderColor: document.getElementById('heading-h2-border-color').value,
+        borderWidth: document.getElementById('heading-h2-border-width').value,
+        borderPosition: document.getElementById('heading-h2-border-position').value,
+        padding: document.getElementById('heading-h2-padding').value,
+        borderRadius: document.getElementById('heading-h2-radius').value,
+        leftBorderColor: document.getElementById('heading-h2-left-border-color').value,
+        leftBorderWidth: document.getElementById('heading-h2-left-border-width').value
+      },
+      h3: {
+        color: document.getElementById('heading-h3-color').value,
+        bgColor: document.getElementById('heading-h3-bg').value,
+        borderColor: document.getElementById('heading-h3-border-color').value,
+        borderWidth: document.getElementById('heading-h3-border-width').value,
+        borderPosition: document.getElementById('heading-h3-border-position').value,
+        padding: document.getElementById('heading-h3-padding').value,
+        borderRadius: document.getElementById('heading-h3-radius').value,
+        leftBorderColor: document.getElementById('heading-h3-left-border-color').value,
+        leftBorderWidth: document.getElementById('heading-h3-left-border-width').value
+      }
     },
     box: {
       point: {
@@ -3572,7 +3630,27 @@ function collectStylesFromInputs() {
     marker: {
       color: document.getElementById('marker-color').value,
       style: document.getElementById('marker-style').value
-    }
+    },
+    list: {
+      markerColor: document.getElementById('list-marker-color').value,
+      markerStyle: document.getElementById('list-marker-style').value,
+      spacing: document.getElementById('list-spacing').value,
+      indent: document.getElementById('list-indent').value
+    },
+    link: {
+      color: document.getElementById('link-color').value,
+      hoverColor: document.getElementById('link-hover-color').value,
+      underline: document.getElementById('link-underline').value,
+      weight: document.getElementById('link-weight').value
+    },
+    image: {
+      borderRadius: document.getElementById('image-radius').value,
+      shadow: document.getElementById('image-shadow').value === 'true',
+      border: document.getElementById('image-border').value === 'true',
+      borderColor: document.getElementById('image-border-color').value,
+      borderWidth: document.getElementById('image-border-width').value
+    },
+    customCSS: document.getElementById('custom-css').value
   };
 }
 
@@ -3779,13 +3857,32 @@ function hexToRgba(hex, alpha) {
 // 入力フィールドにイベントリスナーを設定（リアルタイムプレビュー）
 function setupDecorationInputListeners() {
   const inputIds = [
-    'heading-h2-color', 'heading-h2-border', 'heading-h3-color', 'heading-h3-style',
+    // H2見出し
+    'heading-h2-color', 'heading-h2-bg', 'heading-h2-padding', 'heading-h2-border-position',
+    'heading-h2-border-color', 'heading-h2-border-width', 'heading-h2-radius',
+    'heading-h2-left-border-color', 'heading-h2-left-border-width',
+    // H3見出し
+    'heading-h3-color', 'heading-h3-bg', 'heading-h3-padding', 'heading-h3-border-position',
+    'heading-h3-border-color', 'heading-h3-border-width', 'heading-h3-radius',
+    'heading-h3-left-border-color', 'heading-h3-left-border-width',
+    // ボックス
     'box-point-bg', 'box-point-border', 'box-point-text',
     'box-warning-bg', 'box-warning-border', 'box-warning-text',
     'box-success-bg', 'box-success-border', 'box-success-text', 'box-style',
+    // ボタン
     'button-bg', 'button-text', 'button-hover', 'button-style',
+    // テーブル
     'table-header-bg', 'table-header-text', 'table-border', 'table-stripe-bg', 'table-style',
-    'marker-color', 'marker-style'
+    // マーカー
+    'marker-color', 'marker-style',
+    // リスト
+    'list-marker-color', 'list-marker-style', 'list-spacing', 'list-indent',
+    // リンク
+    'link-color', 'link-hover-color', 'link-underline', 'link-weight',
+    // 画像
+    'image-radius', 'image-shadow', 'image-border', 'image-border-color', 'image-border-width',
+    // カスタムCSS
+    'custom-css'
   ];
   
   inputIds.forEach(id => {
@@ -3903,6 +4000,109 @@ function previewDecorationTemplate() {
   const statusDiv = document.getElementById('decoration-status');
   statusDiv.innerHTML = '<p class="text-green-600 text-sm"><i class="fas fa-check-circle mr-1"></i>プレビューを更新しました</p>';
   setTimeout(() => { statusDiv.innerHTML = ''; }, 2000);
+}
+
+// プリセットテーマを適用
+function applyPresetTheme(themeName) {
+  let theme = {};
+  
+  switch(themeName) {
+    case 'modern':
+      theme = {
+        heading: {
+          h2: { color: '#1f2937', bgColor: '#f9fafb', borderColor: '#3b82f6', borderWidth: '0', borderPosition: 'left', padding: '12', borderRadius: '0', leftBorderColor: '#3b82f6', leftBorderWidth: '4' },
+          h3: { color: '#374151', bgColor: '#ffffff', borderColor: '#3b82f6', borderWidth: '0', borderPosition: 'none', padding: '0', borderRadius: '0', leftBorderColor: '#3b82f6', leftBorderWidth: '3' }
+        },
+        box: {
+          point: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+          warning: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+          success: { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
+          style: 'background'
+        },
+        button: { bg: '#3b82f6', text: '#ffffff', hover: '#2563eb', style: 'solid' },
+        table: { headerBg: '#f3f4f6', headerText: '#111827', border: '#d1d5db', stripeBg: '#f9fafb', style: 'striped' },
+        marker: { color: '#60a5fa', style: 'underline' },
+        list: { markerColor: '#3b82f6', markerStyle: 'disc', spacing: '12', indent: '32' },
+        link: { color: '#3b82f6', hoverColor: '#2563eb', underline: 'hover', weight: 'medium' },
+        image: { borderRadius: '8', shadow: true, border: false, borderColor: '#e5e7eb', borderWidth: '1' },
+        customCSS: ''
+      };
+      break;
+      
+    case 'colorful':
+      theme = {
+        heading: {
+          h2: { color: '#ffffff', bgColor: '#ec4899', borderColor: '#be185d', borderWidth: '0', borderPosition: 'none', padding: '12', borderRadius: '8', leftBorderColor: '#f59e0b', leftBorderWidth: '0' },
+          h3: { color: '#ffffff', bgColor: '#8b5cf6', borderColor: '#7c3aed', borderWidth: '0', borderPosition: 'none', padding: '10', borderRadius: '6', leftBorderColor: '#ec4899', leftBorderWidth: '0' }
+        },
+        box: {
+          point: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+          warning: { bg: '#fed7aa', border: '#f97316', text: '#9a3412' },
+          success: { bg: '#bbf7d0', border: '#22c55e', text: '#166534' },
+          style: 'shadow'
+        },
+        button: { bg: '#ec4899', text: '#ffffff', hover: '#db2777', style: 'gradient' },
+        table: { headerBg: '#fae8ff', headerText: '#86198f', border: '#d8b4fe', stripeBg: '#fdf4ff', style: 'bordered' },
+        marker: { color: '#fbbf24', style: 'background' },
+        list: { markerColor: '#ec4899', markerStyle: 'square', spacing: '14', indent: '36' },
+        link: { color: '#ec4899', hoverColor: '#db2777', underline: 'always', weight: 'semibold' },
+        image: { borderRadius: '12', shadow: true, border: true, borderColor: '#ec4899', borderWidth: '3' },
+        customCSS: ''
+      };
+      break;
+      
+    case 'minimal':
+      theme = {
+        heading: {
+          h2: { color: '#000000', bgColor: '#ffffff', borderColor: '#000000', borderWidth: '1', borderPosition: 'bottom', padding: '6', borderRadius: '0', leftBorderColor: '#000000', leftBorderWidth: '0' },
+          h3: { color: '#1f2937', bgColor: '#ffffff', borderColor: '#6b7280', borderWidth: '0', borderPosition: 'none', padding: '0', borderRadius: '0', leftBorderColor: '#000000', leftBorderWidth: '0' }
+        },
+        box: {
+          point: { bg: '#f9fafb', border: '#d1d5db', text: '#374151' },
+          warning: { bg: '#fef9f5', border: '#d1d5db', text: '#78716c' },
+          success: { bg: '#f9fafb', border: '#d1d5db', text: '#374151' },
+          style: 'border'
+        },
+        button: { bg: '#000000', text: '#ffffff', hover: '#374151', style: 'solid' },
+        table: { headerBg: '#ffffff', headerText: '#000000', border: '#d1d5db', stripeBg: '#f9fafb', style: 'default' },
+        marker: { color: '#e5e7eb', style: 'background' },
+        list: { markerColor: '#6b7280', markerStyle: 'circle', spacing: '10', indent: '28' },
+        link: { color: '#000000', hoverColor: '#374151', underline: 'always', weight: 'normal' },
+        image: { borderRadius: '0', shadow: false, border: true, borderColor: '#e5e7eb', borderWidth: '1' },
+        customCSS: ''
+      };
+      break;
+      
+    case 'elegant':
+      theme = {
+        heading: {
+          h2: { color: '#4b5563', bgColor: '#faf5ff', borderColor: '#c084fc', borderWidth: '2', borderPosition: 'bottom', padding: '10', borderRadius: '4', leftBorderColor: '#a855f7', leftBorderWidth: '0' },
+          h3: { color: '#6b7280', bgColor: '#fef3c7', borderColor: '#fbbf24', borderWidth: '0', borderPosition: 'left', padding: '8', borderRadius: '2', leftBorderColor: '#f59e0b', leftBorderWidth: '3' }
+        },
+        box: {
+          point: { bg: '#faf5ff', border: '#c084fc', text: '#7c3aed' },
+          warning: { bg: '#fefce8', border: '#fbbf24', text: '#a16207' },
+          success: { bg: '#f0fdf4', border: '#86efac', text: '#166534' },
+          style: 'background'
+        },
+        button: { bg: '#a855f7', text: '#ffffff', hover: '#9333ea', style: 'solid' },
+        table: { headerBg: '#faf5ff', headerText: '#6b21a8', border: '#e9d5ff', stripeBg: '#fdf4ff', style: 'striped' },
+        marker: { color: '#fde047', style: 'underline' },
+        list: { markerColor: '#a855f7', markerStyle: 'disc', spacing: '12', indent: '32' },
+        link: { color: '#a855f7', hoverColor: '#9333ea', underline: 'hover', weight: 'medium' },
+        image: { borderRadius: '6', shadow: true, border: false, borderColor: '#e9d5ff', borderWidth: '1' },
+        customCSS: ''
+      };
+      break;
+  }
+  
+  currentDecorationStyles = theme;
+  applyStylesToInputs();
+  updateDecorationPreview();
+  
+  const statusDiv = document.getElementById('decoration-status');
+  statusDiv.innerHTML = `<p class="text-purple-600 text-sm"><i class="fas fa-palette mr-1"></i>${themeName}テーマを適用しました。「保存」ボタンで確定してください。</p>`;
+  setTimeout(() => { statusDiv.innerHTML = ''; }, 5000);
 }
 
 // デフォルトスタイルに戻す

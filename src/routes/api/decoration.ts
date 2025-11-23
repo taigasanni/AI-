@@ -128,24 +128,47 @@ function generateCSSFromStyles(styles: any): string {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  // 旧形式との互換性チェック
+  const isOldFormat = styles.heading && !styles.heading.h2;
+  
+  if (isOldFormat) {
+    // 旧形式のスタイルをそのまま使用
+    return generateOldFormatCSS(styles, hexToRgba);
+  }
+
+  // 新形式のスタイル生成
+  const h2 = styles.heading?.h2 || {};
+  const h3 = styles.heading?.h3 || {};
+
   return `
 /* カスタム装飾スタイル */
 
-/* 見出しスタイル */
+/* H2見出しスタイル */
 .article-content h2,
 .markdown-preview h2,
 #article-preview-content h2 {
-  color: ${styles.heading?.h2Color || '#111827'} !important;
-  border-bottom: 2px solid ${styles.heading?.h2Border || '#e5e7eb'} !important;
+  color: ${h2.color || '#111827'} !important;
+  background-color: ${h2.bgColor || '#ffffff'} !important;
+  padding: ${h2.padding || '8'}px !important;
+  border-radius: ${h2.borderRadius || '0'}px !important;
+  ${h2.borderPosition === 'bottom' ? `border-bottom: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'} !important;` : ''}
+  ${h2.borderPosition === 'left' ? `border-left: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'} !important;` : ''}
+  ${h2.borderPosition === 'all' ? `border: ${h2.borderWidth || '2'}px solid ${h2.borderColor || '#e5e7eb'} !important;` : ''}
+  ${h2.leftBorderWidth && parseInt(h2.leftBorderWidth) > 0 ? `border-left: ${h2.leftBorderWidth}px solid ${h2.leftBorderColor || '#3b82f6'} !important;` : ''}
 }
 
+/* H3見出しスタイル */
 .article-content h3,
 .markdown-preview h3,
 #article-preview-content h3 {
-  color: ${styles.heading?.h3Color || '#1f2937'} !important;
-  ${styles.heading?.h3Style === 'left-border' ? `border-left: 4px solid ${styles.heading.h3Color} !important; padding-left: 12px !important;` : ''}
-  ${styles.heading?.h3Style === 'background' ? `background: ${hexToRgba(styles.heading.h3Color, 0.1)} !important; padding: 8px 12px !important; border-radius: 4px !important;` : ''}
-  ${styles.heading?.h3Style === 'underline' ? `border-bottom: 2px solid ${styles.heading.h3Color} !important; padding-bottom: 4px !important;` : ''}
+  color: ${h3.color || '#1f2937'} !important;
+  background-color: ${h3.bgColor || '#ffffff'} !important;
+  padding: ${h3.padding || '0'}px !important;
+  border-radius: ${h3.borderRadius || '0'}px !important;
+  ${h3.borderPosition === 'bottom' ? `border-bottom: ${h3.borderWidth || '2'}px solid ${h3.borderColor || '#1f2937'} !important;` : ''}
+  ${h3.borderPosition === 'left' ? `border-left: ${h3.borderWidth || '2'}px solid ${h3.borderColor || '#1f2937'} !important;` : ''}
+  ${h3.borderPosition === 'all' ? `border: ${h3.borderWidth || '2'}px solid ${h3.borderColor || '#1f2937'} !important;` : ''}
+  ${h3.leftBorderWidth && parseInt(h3.leftBorderWidth) > 0 ? `border-left: ${h3.leftBorderWidth}px solid ${h3.leftBorderColor || '#3b82f6'} !important; padding-left: 12px !important;` : ''}
 }
 
 /* ボックススタイル - ポイント */
@@ -219,6 +242,79 @@ ${styles.table?.style === 'bordered' ? `
 #article-preview-content strong {
   ${styles.marker?.style === 'underline' ? `background: linear-gradient(transparent 65%, ${hexToRgba(styles.marker.color, 0.5)} 65%) !important; padding: 0 3px !important;` : ''}
   ${styles.marker?.style === 'background' ? `background: ${hexToRgba(styles.marker.color, 0.3)} !important; padding: 2px 6px !important; border-radius: 3px !important;` : ''}
+}
+
+/* リストスタイル */
+.article-content ul > li::before,
+.markdown-preview ul > li::before,
+#article-preview-content ul > li::before {
+  background-color: ${styles.list?.markerColor || '#6b7280'} !important;
+}
+
+.article-content li,
+.markdown-preview li,
+#article-preview-content li {
+  margin-bottom: ${styles.list?.spacing || '12'}px !important;
+  padding-left: ${styles.list?.indent || '32'}px !important;
+}
+
+/* リンクスタイル */
+.article-content a,
+.markdown-preview a,
+#article-preview-content a {
+  color: ${styles.link?.color || '#3b82f6'} !important;
+  font-weight: ${styles.link?.weight === 'medium' ? '500' : styles.link?.weight === 'semibold' ? '600' : '400'} !important;
+  ${styles.link?.underline === 'always' ? 'text-decoration: underline !important;' : ''}
+  ${styles.link?.underline === 'none' ? 'text-decoration: none !important;' : ''}
+}
+
+.article-content a:hover,
+.markdown-preview a:hover,
+#article-preview-content a:hover {
+  color: ${styles.link?.hoverColor || '#2563eb'} !important;
+  ${styles.link?.underline === 'hover' ? 'text-decoration: underline !important;' : ''}
+}
+
+/* 画像スタイル */
+.article-content img,
+.markdown-preview img,
+#article-preview-content img {
+  border-radius: ${styles.image?.borderRadius || '4'}px !important;
+  ${styles.image?.shadow ? 'box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;' : ''}
+  ${styles.image?.border ? `border: ${styles.image.borderWidth || '1'}px solid ${styles.image.borderColor || '#e5e7eb'} !important;` : ''}
+}
+
+/* カスタムCSS */
+${styles.customCSS || ''}
+  `;
+}
+
+// 旧形式のCSS生成（互換性のため）
+function generateOldFormatCSS(styles: any, hexToRgba: Function): string {
+  return `
+/* カスタム装飾スタイル（旧形式） */
+
+.article-content h2,
+.markdown-preview h2,
+#article-preview-content h2 {
+  color: ${styles.heading?.h2Color || '#111827'} !important;
+  border-bottom: 2px solid ${styles.heading?.h2Border || '#e5e7eb'} !important;
+}
+
+.article-content h3,
+.markdown-preview h3,
+#article-preview-content h3 {
+  color: ${styles.heading?.h3Color || '#1f2937'} !important;
+  ${styles.heading?.h3Style === 'left-border' ? `border-left: 4px solid ${styles.heading.h3Color} !important; padding-left: 12px !important;` : ''}
+  ${styles.heading?.h3Style === 'background' ? `background: ${hexToRgba(styles.heading.h3Color, 0.1)} !important; padding: 8px 12px !important; border-radius: 4px !important;` : ''}
+  ${styles.heading?.h3Style === 'underline' ? `border-bottom: 2px solid ${styles.heading.h3Color} !important; padding-bottom: 4px !important;` : ''}
+}
+
+/* ボックス、テーブル、マーカーなどは既存のまま */
+.article-content blockquote:has(strong:first-child:contains("💡")) {
+  background: ${styles.box?.point?.bg || '#eff6ff'} !important;
+  border: 2px solid ${styles.box?.point?.border || '#3b82f6'} !important;
+  color: ${styles.box?.point?.text || '#1e40af'} !important;
 }
   `;
 }
