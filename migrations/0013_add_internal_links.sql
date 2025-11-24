@@ -2,10 +2,14 @@
 -- 内部リンク管理テーブル
 -- ===================================
 
+-- 古い内部リンクテーブルを削除して新しい構造で再作成
+DROP TABLE IF EXISTS internal_links;
+
 -- 内部リンクテーブル
 -- from_article_idの記事のfrom_headingからto_article_idの記事のto_headingへリンクする
-CREATE TABLE IF NOT EXISTS internal_links (
+CREATE TABLE internal_links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,            -- ユーザーID（追加）
   from_article_id INTEGER NOT NULL,
   from_heading TEXT NOT NULL,          -- リンク元の見出しテキスト
   from_heading_id TEXT,                -- リンク元の見出しID（anchor用）
@@ -20,6 +24,7 @@ CREATE TABLE IF NOT EXISTS internal_links (
 );
 
 -- インデックス
+CREATE INDEX IF NOT EXISTS idx_internal_links_user ON internal_links(user_id);
 CREATE INDEX IF NOT EXISTS idx_internal_links_from_article ON internal_links(from_article_id);
 CREATE INDEX IF NOT EXISTS idx_internal_links_to_article ON internal_links(to_article_id);
 
