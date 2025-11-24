@@ -617,6 +617,27 @@ function renderCurrentStep() {
           
           <div class="mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2">
+              公開URL (スラッグ) <span class="text-gray-500 text-xs">(英数字とハイフンのみ、記事のURLになります)</span>
+            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-gray-600 text-sm">/blog/</span>
+              <input 
+                type="text" 
+                id="article-slug" 
+                value="${escapeHtml(contentFlow.slug || '')}"
+                placeholder="例: ai-blog-automation"
+                pattern="[a-z0-9-]+"
+                class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                oninput="validateSlug(this)">
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-info-circle mr-1"></i>
+              記事のURLに使用されます。空欄の場合は自動生成されます (例: /blog/ai-blog-automation)
+            </p>
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
               ターゲットキーワード <span class="text-gray-500 text-xs">(カンマ区切りで3-5個)</span>
             </label>
             <input 
@@ -928,6 +949,7 @@ async function saveArticle() {
   const seoTitle = document.getElementById('seo-title').value;
   const metaDescription = document.getElementById('meta-description').value;
   const targetKeywords = document.getElementById('target-keywords').value;
+  const slug = document.getElementById('article-slug')?.value || '';
   
   if (!title || !content) {
     alert('タイトルと本文を入力してください');
@@ -952,6 +974,7 @@ async function saveArticle() {
         title,
         content,
         status,
+        slug: slug || null,
         keyword: contentFlow.keyword,
         outline: contentFlow.outline,
         seo_title: seoTitle,
@@ -2260,6 +2283,26 @@ function updateMetaDescCount() {
   if (textarea && countEl) {
     countEl.textContent = textarea.value.length;
   }
+}
+
+// スラッグのバリデーション
+function validateSlug(input) {
+  // 小文字の英数字とハイフンのみ許可
+  let value = input.value;
+  
+  // 大文字を小文字に変換
+  value = value.toLowerCase();
+  
+  // 許可されない文字を削除
+  value = value.replace(/[^a-z0-9-]/g, '');
+  
+  // 連続するハイフンを1つに
+  value = value.replace(/-+/g, '-');
+  
+  // 先頭と末尾のハイフンを削除
+  value = value.replace(/^-+|-+$/g, '');
+  
+  input.value = value;
 }
 
 // SEO項目の再生成
