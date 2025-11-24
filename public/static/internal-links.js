@@ -39,22 +39,61 @@ function showInternalLinks() {
 
       <!-- ツールバー -->
       <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
-        <div class="flex justify-between items-center">
-          <div class="flex space-x-4">
-            <button onclick="refreshMindMap()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow">
-              <i class="fas fa-sync-alt mr-2"></i>更新
-            </button>
-            <button onclick="expandAllArticles('left')" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
-              <i class="fas fa-expand-alt mr-2"></i>左側すべて展開
-            </button>
-            <button onclick="expandAllArticles('right')" class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow">
-              <i class="fas fa-expand-alt mr-2"></i>右側すべて展開
-            </button>
-            <button onclick="clearAllLinks()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow">
-              <i class="fas fa-trash mr-2"></i>全リンク削除
+        <div class="flex flex-col space-y-4">
+          <!-- 検索フィルター -->
+          <div class="flex items-center space-x-4">
+            <div class="flex-1">
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                <input type="text" 
+                       id="search-articles" 
+                       placeholder="記事を検索（タイトル、キーワード）..." 
+                       class="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                       oninput="filterArticles(this.value)">
+              </div>
+            </div>
+            <button onclick="clearSearch()" class="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+              <i class="fas fa-times mr-2"></i>クリア
             </button>
           </div>
+          
+          <!-- ボタングループ -->
+          <div class="flex justify-between items-center">
+            <div class="flex space-x-4">
+              <button onclick="refreshMindMap()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow">
+                <i class="fas fa-sync-alt mr-2"></i>更新
+              </button>
+              <button onclick="expandAllArticles('left')" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow">
+                <i class="fas fa-expand-alt mr-2"></i>左側すべて展開
+              </button>
+              <button onclick="expandAllArticles('right')" class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow">
+                <i class="fas fa-expand-alt mr-2"></i>右側すべて展開
+              </button>
+              <button onclick="clearAllLinks()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow">
+                <i class="fas fa-trash mr-2"></i>全リンク削除
+              </button>
+            </div>
+            
+            <!-- モード切替 -->
+            <div class="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
+              <span class="text-sm font-semibold text-gray-700">操作モード:</span>
+              <button id="drag-mode-btn" onclick="setLinkMode('drag')" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold">
+                <i class="fas fa-hand-rock mr-1"></i>ドラッグ
+              </button>
+              <button id="click-mode-btn" onclick="setLinkMode('click')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-bold">
+                <i class="fas fa-mouse-pointer mr-1"></i>クリック
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+      
+      <!-- モード説明 -->
+      <div id="mode-description" class="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-4">
+        <p class="text-blue-800 font-semibold">
+          <i class="fas fa-hand-rock mr-2"></i>
+          <strong>ドラッグモード:</strong> 左側の見出しを右側の見出しにドラッグ&ドロップしてリンクを作成
+        </p>
       </div>
 
       <!-- 2カラムレイアウト -->
