@@ -18,6 +18,7 @@ import blog from './routes/api/blog'
 import publicArticlesApi from './routes/api/public-articles'
 import internalLinksApi from './routes/api/internal-links'
 import imageLibraryApi from './routes/api/image-library'
+import supervisors from './routes/api/supervisors'
 
 // Public Routes
 import publicRoutes from './routes/public'
@@ -52,6 +53,7 @@ app.route('/api/blog', blog)
 app.route('/api/public/articles', publicArticlesApi)
 app.route('/api/internal-links', internalLinksApi)
 app.route('/api/image-library', imageLibraryApi)
+app.route('/api/supervisors', supervisors)
 
 // ヘルスチェック
 app.get('/api/health', (c) => {

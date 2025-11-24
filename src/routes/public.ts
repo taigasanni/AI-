@@ -553,6 +553,9 @@ publicRoutes.get('/blog/:id', async (c) => {
                       </nav>
                   </div>
 
+                  <!-- 監修者カード -->
+                  <div id="supervisor-card" class="hidden mb-8"></div>
+
                   <!-- 記事本文 -->
                   <div id="article-body" class="article-content text-gray-800">
                       <!-- Markdown will be rendered here -->
@@ -713,6 +716,84 @@ publicRoutes.get('/blog/:id', async (c) => {
                       }, 1500);
                   }
               }
+              
+              // 監修者カードを表示
+              async function loadSupervisor() {
+                  try {
+                      const response = await fetch(\`/api/supervisors/article/${article.id}\`);
+                      if (!response.ok) return;
+                      
+                      const data = await response.json();
+                      if (!data.supervisor) return;
+                      
+                      const supervisor = data.supervisor;
+                      const supervisorCard = document.getElementById('supervisor-card');
+                      if (!supervisorCard) return;
+                      
+                      // 監修者カードのHTML生成
+                      let cardHTML = \`
+                          <div class="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg p-6">
+                              <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                  <i class="fas fa-user-check text-green-600 mr-2"></i>
+                                  この記事の監修者
+                              </h3>
+                              <div class="flex items-start gap-4">
+                      \`;
+                      
+                      // プロフィール画像
+                      if (supervisor.avatar_url) {
+                          cardHTML += \`
+                              <img src="\${supervisor.avatar_url}" alt="\${supervisor.name}" 
+                                   class="w-20 h-20 rounded-full object-cover flex-shrink-0 border-2 border-green-300">
+                          \`;
+                      } else {
+                          cardHTML += \`
+                              <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 border-2 border-green-300">
+                                  <i class="fas fa-user text-green-600 text-3xl"></i>
+                              </div>
+                          \`;
+                      }
+                      
+                      cardHTML += '<div class="flex-1">';
+                      
+                      // 名前と肩書き
+                      cardHTML += \`<h4 class="text-xl font-bold text-gray-800">\${supervisor.name}</h4>\`;
+                      if (supervisor.title) {
+                          cardHTML += \`<p class="text-gray-600 font-semibold mb-2">\${supervisor.title}</p>\`;
+                      }
+                      
+                      // 説明
+                      if (supervisor.description) {
+                          cardHTML += \`<p class="text-gray-700 text-sm mb-3">\${supervisor.description}</p>\`;
+                      }
+                      
+                      // SNSリンク
+                      const links = [];
+                      if (supervisor.website_url) {
+                          links.push(\`<a href="\${supervisor.website_url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-sm"><i class="fas fa-globe mr-1"></i>Website</a>\`);
+                      }
+                      if (supervisor.twitter_url) {
+                          links.push(\`<a href="\${supervisor.twitter_url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-sm"><i class="fab fa-twitter mr-1"></i>Twitter</a>\`);
+                      }
+                      if (supervisor.linkedin_url) {
+                          links.push(\`<a href="\${supervisor.linkedin_url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-sm"><i class="fab fa-linkedin mr-1"></i>LinkedIn</a>\`);
+                      }
+                      
+                      if (links.length > 0) {
+                          cardHTML += \`<div class="flex gap-4 flex-wrap">\${links.join('')}</div>\`;
+                      }
+                      
+                      cardHTML += '</div></div></div>';
+                      
+                      supervisorCard.innerHTML = cardHTML;
+                      supervisorCard.classList.remove('hidden');
+                  } catch (error) {
+                      console.error('Load supervisor error:', error);
+                  }
+              }
+              
+              // 監修者を読み込む
+              loadSupervisor();
 
               // シェア機能
               const currentUrl = window.location.href;

@@ -684,6 +684,20 @@ function renderCurrentStep() {
             </div>
           </div>
           
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+              監修者 <span class="text-gray-500 text-xs">(目次の下に表示されます)</span>
+            </label>
+            <select id="article-supervisor" 
+              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 bg-white">
+              <option value="">監修者なし</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-info-circle mr-1"></i>
+              監修者を選択すると、公開記事の目次の下に監修者カードが表示されます。監修者は設定画面から登録できます。
+            </p>
+          </div>
+          
           <button onclick="regenerateSEO()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700">
             <i class="fas fa-sync-alt mr-2"></i>SEO項目を再生成
           </button>
@@ -715,6 +729,9 @@ function renderCurrentStep() {
         if (count) count.textContent = seoTitleInput.value.length;
       });
     }
+    
+    // 監修者リストを読み込む
+    loadSupervisorsForArticle();
   }
 }
 
@@ -987,6 +1004,32 @@ async function saveArticle() {
     const data = await response.json();
     
     if (data.success) {
+      const articleId = data.article.id;
+      
+      // 監修者を設定
+      const supervisorId = document.getElementById('article-supervisor')?.value;
+      if (supervisorId) {
+        // 監修者を設定
+        await fetch(`${API_BASE_URL}/supervisors/article/${articleId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-User-Id': currentUser.id
+          },
+          body: JSON.stringify({ supervisor_id: supervisorId })
+        });
+      } else {
+        // 監修者を削除（監修者なしを選択した場合）
+        await fetch(`${API_BASE_URL}/supervisors/article/${articleId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-User-Id': currentUser.id
+          }
+        });
+      }
+      
       showToast(isEditMode ? '✅ 記事を更新しました' : '✅ 記事を保存しました', 'success');
       
       // フローをリセット
@@ -1389,6 +1432,9 @@ async function showSettings() {
           </button>
           <button onclick="switchSettingsTab('user-info')" id="settings-tab-user-info" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
             <i class="fas fa-user mr-2"></i>ユーザー情報
+          </button>
+          <button onclick="switchSettingsTab('supervisors')" id="settings-tab-supervisors" class="settings-tab-button px-6 py-3 font-semibold text-gray-600 hover:text-blue-600">
+            <i class="fas fa-user-check mr-2"></i>監修者
           </button>
         </div>
       </div>
@@ -2003,6 +2049,86 @@ async function showSettings() {
           </div>
         </div>
 
+        <!-- 監修者タブ -->
+        <div id="settings-content-supervisors" class="settings-tab-content hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">
+              <i class="fas fa-user-check mr-2"></i>監修者管理
+            </h2>
+            <button onclick="showSupervisorForm()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              <i class="fas fa-plus mr-2"></i>監修者を追加
+            </button>
+          </div>
+          <p class="text-sm text-gray-600 mb-4">
+            記事に監修者を設定できます。監修者カードは公開記事の目次の下に表示されます。
+          </p>
+          <div id="supervisors-list"></div>
+          
+          <!-- 監修者編集フォーム（初期は非表示） -->
+          <div id="supervisor-form" class="hidden mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4" id="supervisor-form-title">監修者を追加</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  名前 <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="supervisor-name" placeholder="例: 山田 太郎" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  肩書き
+                </label>
+                <input type="text" id="supervisor-title" placeholder="例: 医師、弁護士、税理士" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  説明・経歴
+                </label>
+                <textarea id="supervisor-description" rows="3" placeholder="監修者の詳しい説明や経歴を入力"
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  プロフィール画像URL
+                </label>
+                <input type="text" id="supervisor-avatar" placeholder="https://example.com/avatar.jpg" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  ウェブサイトURL
+                </label>
+                <input type="text" id="supervisor-website" placeholder="https://example.com" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  Twitter URL
+                </label>
+                <input type="text" id="supervisor-twitter" placeholder="https://twitter.com/username" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  LinkedIn URL
+                </label>
+                <input type="text" id="supervisor-linkedin" placeholder="https://linkedin.com/in/username" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div class="flex gap-3">
+                <button onclick="saveSupervisor()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-save mr-2"></i>保存
+                </button>
+                <button onclick="cancelSupervisorForm()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                  <i class="fas fa-times mr-2"></i>キャンセル
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
@@ -2053,6 +2179,8 @@ function switchSettingsTab(tab) {
   } else if (tab === 'decoration') {
     loadDecorationStyles();
     setupDecorationInputListeners();
+  } else if (tab === 'supervisors') {
+    loadSupervisors();
   }
 }
 
@@ -4783,5 +4911,250 @@ function insertImageToArticle(imageUrl, altText) {
   }
 
   showToast('画像を挿入しました', 'success');
+}
+
+/**
+ * 監修者管理機能
+ */
+
+// 監修者一覧を読み込む
+async function loadSupervisors() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/supervisors`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-User-Id': currentUser.id
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load supervisors');
+
+    const data = await response.json();
+    const supervisors = data.supervisors || [];
+
+    const listContainer = document.getElementById('supervisors-list');
+    if (!listContainer) return;
+
+    if (supervisors.length === 0) {
+      listContainer.innerHTML = '<p class="text-gray-500 text-center py-4">監修者が登録されていません</p>';
+      return;
+    }
+
+    listContainer.innerHTML = supervisors.map(supervisor => `
+      <div class="border rounded-lg p-4 mb-4 hover:shadow-md transition-shadow">
+        <div class="flex items-start justify-between">
+          <div class="flex items-start gap-4 flex-1">
+            ${supervisor.avatar_url ? `
+              <img src="${escapeHtml(supervisor.avatar_url)}" alt="${escapeHtml(supervisor.name)}" 
+                class="w-16 h-16 rounded-full object-cover">
+            ` : `
+              <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                <i class="fas fa-user text-gray-400 text-2xl"></i>
+              </div>
+            `}
+            <div class="flex-1">
+              <h3 class="font-bold text-gray-800 text-lg">${escapeHtml(supervisor.name)}</h3>
+              ${supervisor.title ? `<p class="text-gray-600 text-sm">${escapeHtml(supervisor.title)}</p>` : ''}
+              ${supervisor.description ? `<p class="text-gray-600 text-sm mt-2">${escapeHtml(supervisor.description)}</p>` : ''}
+              <div class="flex gap-3 mt-2">
+                ${supervisor.website_url ? `<a href="${escapeHtml(supervisor.website_url)}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fas fa-globe mr-1"></i>Website</a>` : ''}
+                ${supervisor.twitter_url ? `<a href="${escapeHtml(supervisor.twitter_url)}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fab fa-twitter mr-1"></i>Twitter</a>` : ''}
+                ${supervisor.linkedin_url ? `<a href="${escapeHtml(supervisor.linkedin_url)}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fab fa-linkedin mr-1"></i>LinkedIn</a>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editSupervisor(${supervisor.id})" 
+              class="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-600 rounded hover:bg-blue-50">
+              <i class="fas fa-edit mr-1"></i>編集
+            </button>
+            <button onclick="deleteSupervisor(${supervisor.id})" 
+              class="text-red-600 hover:text-red-800 px-3 py-1 border border-red-600 rounded hover:bg-red-50">
+              <i class="fas fa-trash mr-1"></i>削除
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Load supervisors error:', error);
+    showToast('監修者の読み込みに失敗しました', 'error');
+  }
+}
+
+// グローバル変数：編集中の監修者ID
+let editingSupervisorId = null;
+
+// 監修者フォームを表示
+function showSupervisorForm() {
+  editingSupervisorId = null;
+  document.getElementById('supervisor-form-title').textContent = '監修者を追加';
+  document.getElementById('supervisor-name').value = '';
+  document.getElementById('supervisor-title').value = '';
+  document.getElementById('supervisor-description').value = '';
+  document.getElementById('supervisor-avatar').value = '';
+  document.getElementById('supervisor-website').value = '';
+  document.getElementById('supervisor-twitter').value = '';
+  document.getElementById('supervisor-linkedin').value = '';
+  document.getElementById('supervisor-form').classList.remove('hidden');
+}
+
+// 監修者フォームをキャンセル
+function cancelSupervisorForm() {
+  editingSupervisorId = null;
+  document.getElementById('supervisor-form').classList.add('hidden');
+}
+
+// 監修者を編集
+async function editSupervisor(supervisorId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/supervisors/${supervisorId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-User-Id': currentUser.id
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load supervisor');
+
+    const data = await response.json();
+    const supervisor = data.supervisor;
+
+    editingSupervisorId = supervisorId;
+    document.getElementById('supervisor-form-title').textContent = '監修者を編集';
+    document.getElementById('supervisor-name').value = supervisor.name || '';
+    document.getElementById('supervisor-title').value = supervisor.title || '';
+    document.getElementById('supervisor-description').value = supervisor.description || '';
+    document.getElementById('supervisor-avatar').value = supervisor.avatar_url || '';
+    document.getElementById('supervisor-website').value = supervisor.website_url || '';
+    document.getElementById('supervisor-twitter').value = supervisor.twitter_url || '';
+    document.getElementById('supervisor-linkedin').value = supervisor.linkedin_url || '';
+    document.getElementById('supervisor-form').classList.remove('hidden');
+  } catch (error) {
+    console.error('Edit supervisor error:', error);
+    showToast('監修者の読み込みに失敗しました', 'error');
+  }
+}
+
+// 監修者を保存
+async function saveSupervisor() {
+  const name = document.getElementById('supervisor-name').value.trim();
+  
+  if (!name) {
+    showToast('名前を入力してください', 'error');
+    return;
+  }
+
+  const data = {
+    name,
+    title: document.getElementById('supervisor-title').value.trim() || null,
+    description: document.getElementById('supervisor-description').value.trim() || null,
+    avatar_url: document.getElementById('supervisor-avatar').value.trim() || null,
+    website_url: document.getElementById('supervisor-website').value.trim() || null,
+    twitter_url: document.getElementById('supervisor-twitter').value.trim() || null,
+    linkedin_url: document.getElementById('supervisor-linkedin').value.trim() || null
+  };
+
+  try {
+    const url = editingSupervisorId 
+      ? `${API_BASE_URL}/supervisors/${editingSupervisorId}`
+      : `${API_BASE_URL}/supervisors`;
+    
+    const method = editingSupervisorId ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-User-Id': currentUser.id
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) throw new Error('Failed to save supervisor');
+
+    showToast(editingSupervisorId ? '監修者を更新しました' : '監修者を追加しました', 'success');
+    cancelSupervisorForm();
+    loadSupervisors();
+  } catch (error) {
+    console.error('Save supervisor error:', error);
+    showToast('監修者の保存に失敗しました', 'error');
+  }
+}
+
+// 監修者を削除
+async function deleteSupervisor(supervisorId) {
+  if (!confirm('この監修者を削除してもよろしいですか？')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/supervisors/${supervisorId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-User-Id': currentUser.id
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to delete supervisor');
+
+    showToast('監修者を削除しました', 'success');
+    loadSupervisors();
+  } catch (error) {
+    console.error('Delete supervisor error:', error);
+    showToast('監修者の削除に失敗しました', 'error');
+  }
+}
+
+// 記事編集画面用に監修者リストを読み込む
+async function loadSupervisorsForArticle() {
+  try {
+    // 監修者一覧を取得
+    const response = await fetch(`${API_BASE_URL}/supervisors`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-User-Id': currentUser.id
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load supervisors');
+
+    const data = await response.json();
+    const supervisors = data.supervisors || [];
+
+    const select = document.getElementById('article-supervisor');
+    if (!select) return;
+
+    // デフォルトオプション以外をクリア
+    select.innerHTML = '<option value="">監修者なし</option>';
+
+    // 監修者をセレクトボックスに追加
+    supervisors.forEach(supervisor => {
+      const option = document.createElement('option');
+      option.value = supervisor.id;
+      option.textContent = supervisor.name + (supervisor.title ? ` (${supervisor.title})` : '');
+      select.appendChild(option);
+    });
+
+    // 既存記事を編集している場合、現在の監修者を選択状態にする
+    if (contentFlow.editingArticleId) {
+      const supervisorResponse = await fetch(`${API_BASE_URL}/supervisors/article/${contentFlow.editingArticleId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (supervisorResponse.ok) {
+        const supervisorData = await supervisorResponse.json();
+        if (supervisorData.supervisor) {
+          select.value = supervisorData.supervisor.id;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Load supervisors for article error:', error);
+  }
 }
 
