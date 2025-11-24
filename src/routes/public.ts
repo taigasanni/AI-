@@ -677,6 +677,19 @@ publicRoutes.get('/blog/:id', async (c) => {
                   
                   tocList.innerHTML = tocHTML;
                   tocContainer.style.display = 'block';
+                  
+                  // 目次を最初の段落（導入文）の後に移動
+                  const firstParagraph = articleBody.querySelector('p');
+                  if (firstParagraph) {
+                      // 目次を現在の位置から削除
+                      const tocParent = tocContainer.parentNode;
+                      if (tocParent) {
+                          tocContainer.remove();
+                      }
+                      
+                      // 最初の段落の直後に目次を挿入
+                      firstParagraph.insertAdjacentElement('afterend', tocContainer);
+                  }
               }
               
               // スムーススクロール関数

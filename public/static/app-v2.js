@@ -1183,12 +1183,13 @@ async function editArticle(articleId) {
       
       // contentFlowに記事データを読み込む
       contentFlow.keyword = article.keyword || '';
-      contentFlow.outline = outline;
+      contentFlow.outline = outline || { title: article.title }; // タイトルを保持
       contentFlow.article = article.content || '';
       contentFlow.seo_title = article.seo_title || '';
       contentFlow.meta_description = article.meta_description || '';
       contentFlow.target_keywords = article.target_keywords || '';
       contentFlow.og_image_url = article.og_image_url || '';
+      contentFlow.slug = article.slug || '';
       contentFlow.step = 'article'; // 記事編集ステップに設定
       contentFlow.editingArticleId = articleId; // 編集中の記事IDを保存
       
