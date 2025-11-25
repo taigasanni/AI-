@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.5 (Enable Public Supervisor Display)
+// Version: 2.5.6 (Improve Article Save Error Handling)
 // ===================================
 
 const API_BASE = '/api';
@@ -1143,31 +1143,59 @@ async function saveArticle() {
       })
     });
     
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Article save failed:', errorData);
+      alert(`記事の保存に失敗しました: ${errorData.error || response.statusText}`);
+      return;
+    }
+    
     const data = await response.json();
     
     if (data.success) {
-      const articleId = data.article.id;
+      const articleId = data.data?.id || data.article?.id;
       
-      // 監修者を設定
+      if (!articleId) {
+        console.error('Article ID not found in response:', data);
+        alert('記事は保存されましたが、IDが取得できませんでした');
+        return;
+      }
+      
+      // 監修者を設定（エラーが発生しても記事保存は成功として扱う）
       const supervisorId = document.getElementById('article-supervisor')?.value;
-      if (supervisorId) {
-        // 監修者を設定
-        await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ supervisor_id: supervisorId })
-        });
-      } else {
-        // 監修者を削除（監修者なしを選択した場合）
-        await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
+      try {
+        if (supervisorId) {
+          // 監修者を設定
+          const supervisorRes = await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({ supervisor_id: supervisorId })
+          });
+          
+          if (!supervisorRes.ok) {
+            console.error('Supervisor assignment failed:', await supervisorRes.json());
+            // エラーは記録するが処理は続行
           }
-        });
+        } else {
+          // 監修者を削除（監修者なしを選択した場合）
+          const deleteRes = await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+            }
+          });
+          
+          if (!deleteRes.ok) {
+            console.error('Supervisor removal failed:', await deleteRes.json());
+            // エラーは記録するが処理は続行
+          }
+        }
+      } catch (supervisorError) {
+        console.error('Supervisor operation error:', supervisorError);
+        // 監修者の操作エラーは無視して記事保存成功を表示
       }
       
       showToast(isEditMode ? '✅ 記事を更新しました' : '✅ 記事を保存しました', 'success');
@@ -1189,7 +1217,7 @@ async function saveArticle() {
     }
   } catch (error) {
     console.error('Save article error:', error);
-    alert('記事の保存に失敗しました');
+    alert(`記事の保存に失敗しました: ${error.message}`);
   }
 }
 
