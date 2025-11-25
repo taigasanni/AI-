@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.4 (Fix Supervisor API Authentication)
+// Version: 2.5.5 (Enable Public Supervisor Display)
 // ===================================
 
 const API_BASE = '/api';

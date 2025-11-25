@@ -4,8 +4,16 @@ import { authMiddleware } from '../../middleware/auth';
 
 const supervisors = new Hono<{ Bindings: Env }>();
 
-// 認証ミドルウェアを適用
-supervisors.use('*', authMiddleware);
+// 認証ミドルウェアを適用（公開エンドポイント以外）
+// 公開エンドポイント: GET /article/:articleId は認証不要
+supervisors.use('*', async (c, next) => {
+  // 記事の監修者取得は認証不要（公開ページからアクセスするため）
+  if (c.req.method === 'GET' && c.req.path.match(/\/article\/\d+$/)) {
+    return next();
+  }
+  // その他のエンドポイントは認証必須
+  return authMiddleware(c, next);
+});
 
 // 監修者一覧取得
 supervisors.get('/', async (c) => {
