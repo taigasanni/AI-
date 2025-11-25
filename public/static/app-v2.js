@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.1.0 (Supervisor Feature Added)
+// Version: 2.2.0 (Prompt Management Update)
 // ===================================
 
 const API_BASE = '/api';
@@ -188,18 +188,230 @@ async function loadUserPrompts() {
       const prompts = data.data;
       const promptsSection = document.getElementById('prompts-section');
       
-      if (prompts.length === 0) {
-        promptsSection.innerHTML = `
-          <div class="text-center py-8">
-            <i class="fas fa-inbox text-4xl text-gray-400"></i>
-            <p class="mt-4 text-gray-600">プロンプトがありません</p>
+      const outlinePrompts = prompts.filter(p => p.type === 'outline');
+      const articlePrompts = prompts.filter(p => p.type === 'article_draft');
+      
+      promptsSection.innerHTML = `
+        <!-- アウトラインプロンプト -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">
+              <i class="fas fa-list-ul text-blue-600 mr-2"></i>
+              アウトライン生成プロンプト
+            </h3>
+            <button onclick="showAddPromptForm('outline')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              <i class="fas fa-plus mr-2"></i>追加
+            </button>
           </div>
-        `;
-      } else {
-        const outlinePrompt = prompts.find(p => p.type === 'outline');
-        const articlePrompt = prompts.find(p => p.type === 'article_draft');
+          ${outlinePrompts.length === 0 ? `
+            <p class="text-gray-500 text-center py-4">アウトラインプロンプトがありません</p>
+          ` : outlinePrompts.map(prompt => `
+            <div class="mb-4 p-4 border rounded-lg">
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
+                <input type="text" id="outline-prompt-name-${prompt.id}" value="${escapeHtml(prompt.name)}" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  プロンプト本文
+                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{max_chars}}, {{tone}}</span>
+                </label>
+                <textarea id="outline-prompt-body-${prompt.id}" rows="8" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(prompt.body)}</textarea>
+              </div>
+              <div class="flex gap-3">
+                <button onclick="savePrompt(${prompt.id}, 'outline')" 
+                  class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-save mr-2"></i>保存
+                </button>
+                <button onclick="deletePrompt(${prompt.id})" 
+                  class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                  <i class="fas fa-trash mr-2"></i>削除
+                </button>
+              </div>
+              <div id="prompt-status-${prompt.id}" class="mt-3"></div>
+            </div>
+          `).join('')}
+        </div>
         
-        promptsSection.innerHTML = `
+        <!-- 記事執筆プロンプト -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">
+              <i class="fas fa-file-alt text-green-600 mr-2"></i>
+              記事執筆プロンプト
+            </h3>
+            <button onclick="showAddPromptForm('article_draft')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+              <i class="fas fa-plus mr-2"></i>追加
+            </button>
+          </div>
+          ${articlePrompts.length === 0 ? `
+            <p class="text-gray-500 text-center py-4">記事執筆プロンプトがありません</p>
+          ` : articlePrompts.map(prompt => `
+            <div class="mb-4 p-4 border rounded-lg">
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
+                <input type="text" id="article-prompt-name-${prompt.id}" value="${escapeHtml(prompt.name)}" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+              </div>
+              <div class="mb-3">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                  プロンプト本文
+                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{outline}}, {{max_chars}}, {{tone}}</span>
+                </label>
+                <textarea id="article-prompt-body-${prompt.id}" rows="8" 
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(prompt.body)}</textarea>
+              </div>
+              <div class="flex gap-3">
+                <button onclick="savePrompt(${prompt.id}, 'article')" 
+                  class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                  <i class="fas fa-save mr-2"></i>保存
+                </button>
+                <button onclick="deletePrompt(${prompt.id})" 
+                  class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                  <i class="fas fa-trash mr-2"></i>削除
+                </button>
+              </div>
+              <div id="prompt-status-${prompt.id}" class="mt-3"></div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <!-- プロンプト追加フォーム -->
+        <div id="add-prompt-form" class="hidden p-6 bg-gray-50 rounded-lg border border-gray-300">
+          <h4 class="text-lg font-bold text-gray-800 mb-4" id="add-prompt-form-title">プロンプトを追加</h4>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名 <span class="text-red-500">*</span></label>
+              <input type="text" id="new-prompt-name" placeholder="例: デフォルトアウトライン" 
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト本文 <span class="text-red-500">*</span></label>
+              <textarea id="new-prompt-body" rows="8" placeholder="プロンプトの内容を入力してください"
+                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+            <input type="hidden" id="new-prompt-type" value="">
+            <div class="flex gap-3">
+              <button onclick="addPrompt()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>追加
+              </button>
+              <button onclick="cancelAddPrompt()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i>キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Load prompts error:', error);
+  }
+}
+
+async function showAddPromptForm(type) {
+  const form = document.getElementById('add-prompt-form');
+  const title = document.getElementById('add-prompt-form-title');
+  const typeInput = document.getElementById('new-prompt-type');
+  
+  if (type === 'outline') {
+    title.textContent = 'アウトライン生成プロンプトを追加';
+  } else {
+    title.textContent = '記事執筆プロンプトを追加';
+  }
+  
+  typeInput.value = type;
+  document.getElementById('new-prompt-name').value = '';
+  document.getElementById('new-prompt-body').value = '';
+  form.classList.remove('hidden');
+  form.scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelAddPrompt() {
+  document.getElementById('add-prompt-form').classList.add('hidden');
+}
+
+async function addPrompt() {
+  const name = document.getElementById('new-prompt-name').value.trim();
+  const body = document.getElementById('new-prompt-body').value.trim();
+  const type = document.getElementById('new-prompt-type').value;
+
+  if (!name || !body) {
+    alert('プロンプト名と本文を入力してください');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/prompts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ name, body, type })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('プロンプトを追加しました', 'success');
+      cancelAddPrompt();
+      loadUserPrompts();
+    } else {
+      alert(data.error || 'プロンプトの追加に失敗しました');
+    }
+  } catch (error) {
+    console.error('Add prompt error:', error);
+    alert('プロンプトの追加に失敗しました');
+  }
+}
+
+async function deletePrompt(promptId) {
+  if (!confirm('このプロンプトを削除してもよろしいですか？')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/prompts/${promptId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('プロンプトを削除しました', 'success');
+      loadUserPrompts();
+    } else {
+      alert(data.error || 'プロンプトの削除に失敗しました');
+    }
+  } catch (error) {
+    console.error('Delete prompt error:', error);
+    alert('プロンプトの削除に失敗しました');
+  }
+}
+
+// 以前のコード（削除されたコンテンツ）
+function oldLoadUserPromptsLogic() {
+  // この関数は削除されました
+  const prompts = [];
+  const promptsSection = document.getElementById('prompts-section');
+  
+  if (prompts.length === 0) {
+    promptsSection.innerHTML = `
+      <div class="text-center py-8">
+        <i class="fas fa-inbox text-4xl text-gray-400"></i>
+        <p class="mt-4 text-gray-600">プロンプトがありません</p>
+      </div>
+    `;
+  } else {
+    const outlinePrompt = prompts.find(p => p.type === 'outline');
+    const articlePrompt = prompts.find(p => p.type === 'article_draft');
+    
+    promptsSection.innerHTML = `
           ${outlinePrompt ? `
             <div class="mb-6 p-4 border rounded-lg">
               <h3 class="font-bold text-gray-800 mb-2">
@@ -262,13 +474,21 @@ async function loadUserPrompts() {
 }
 
 async function savePrompt(promptId, type) {
-  const nameId = type === 'outline' ? 'outline-prompt-name' : 'article-prompt-name';
-  const bodyId = type === 'outline' ? 'outline-prompt-body' : 'article-prompt-body';
-  const statusId = type === 'outline' ? 'outline-prompt-status' : 'article-prompt-status';
+  const nameId = type === 'outline' ? `outline-prompt-name-${promptId}` : `article-prompt-name-${promptId}`;
+  const bodyId = type === 'outline' ? `outline-prompt-body-${promptId}` : `article-prompt-body-${promptId}`;
+  const statusId = `prompt-status-${promptId}`;
   
-  const name = document.getElementById(nameId).value.trim();
-  const body = document.getElementById(bodyId).value.trim();
+  const nameEl = document.getElementById(nameId);
+  const bodyEl = document.getElementById(bodyId);
   const statusEl = document.getElementById(statusId);
+  
+  if (!nameEl || !bodyEl) {
+    console.error('Prompt elements not found:', { nameId, bodyId });
+    return;
+  }
+  
+  const name = nameEl.value.trim();
+  const body = bodyEl.value.trim();
 
   if (!name || !body) {
     statusEl.innerHTML = `
