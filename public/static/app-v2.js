@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.1 (Remove Reference Data Tab)
+// Version: 2.5.2 (Fix Supervisor Selection)
 // ===================================
 
 const API_BASE = '/api';
@@ -5301,11 +5301,16 @@ async function deleteSupervisor(supervisorId) {
 // 記事編集画面用に監修者リストを読み込む
 async function loadSupervisorsForArticle() {
   try {
+    if (!currentUser || !currentUser.id) {
+      console.error('Current user not found');
+      return;
+    }
+
     // 監修者一覧を取得
-    const response = await fetch(`${API_BASE_URL}/supervisors`, {
+    const response = await fetch(`${API_BASE}/supervisors`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'X-User-Id': currentUser.id
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5330,9 +5335,10 @@ async function loadSupervisorsForArticle() {
 
     // 既存記事を編集している場合、現在の監修者を選択状態にする
     if (contentFlow.editingArticleId) {
-      const supervisorResponse = await fetch(`${API_BASE_URL}/supervisors/article/${contentFlow.editingArticleId}`, {
+      const supervisorResponse = await fetch(`${API_BASE}/supervisors/article/${contentFlow.editingArticleId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${authToken}`,
+          'X-User-Id': currentUser.id.toString()
         }
       });
 
