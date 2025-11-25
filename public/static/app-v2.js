@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.6 (Improve Article Save Error Handling)
+// Version: 2.5.7 (Fix Supervisor Card Position Below TOC)
 // ===================================
 
 const API_BASE = '/api';

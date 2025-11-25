@@ -681,8 +681,10 @@ publicRoutes.get('/blog/:id', async (c) => {
                   tocList.innerHTML = tocHTML;
                   tocContainer.style.display = 'block';
                   
-                  // 目次を最初のH2見出しの直前に移動
+                  // 目次と監修者カードを最初のH2見出しの直前に移動
                   const firstH2 = articleBody.querySelector('h2');
+                  const supervisorCard = document.getElementById('supervisor-card');
+                  
                   if (firstH2) {
                       // 目次を現在の位置から削除
                       const tocParent = tocContainer.parentNode;
@@ -690,8 +692,18 @@ publicRoutes.get('/blog/:id', async (c) => {
                           tocContainer.remove();
                       }
                       
+                      // 監修者カードも削除（後で目次の後に配置）
+                      if (supervisorCard) {
+                          supervisorCard.remove();
+                      }
+                      
                       // 最初のH2見出しの直前に目次を挿入
                       firstH2.insertAdjacentElement('beforebegin', tocContainer);
+                      
+                      // 目次の直後に監修者カードを挿入
+                      if (supervisorCard) {
+                          tocContainer.insertAdjacentElement('afterend', supervisorCard);
+                      }
                   }
               }
               
