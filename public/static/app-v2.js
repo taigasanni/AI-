@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.2.0 (Prompt Management Update)
+// Version: 2.3.0 (Code Cleanup)
 // ===================================
 
 const API_BASE = '/api';
@@ -391,85 +391,6 @@ async function deletePrompt(promptId) {
   } catch (error) {
     console.error('Delete prompt error:', error);
     alert('プロンプトの削除に失敗しました');
-  }
-}
-
-// 以前のコード（削除されたコンテンツ）
-function oldLoadUserPromptsLogic() {
-  // この関数は削除されました
-  const prompts = [];
-  const promptsSection = document.getElementById('prompts-section');
-  
-  if (prompts.length === 0) {
-    promptsSection.innerHTML = `
-      <div class="text-center py-8">
-        <i class="fas fa-inbox text-4xl text-gray-400"></i>
-        <p class="mt-4 text-gray-600">プロンプトがありません</p>
-      </div>
-    `;
-  } else {
-    const outlinePrompt = prompts.find(p => p.type === 'outline');
-    const articlePrompt = prompts.find(p => p.type === 'article_draft');
-    
-    promptsSection.innerHTML = `
-          ${outlinePrompt ? `
-            <div class="mb-6 p-4 border rounded-lg">
-              <h3 class="font-bold text-gray-800 mb-2">
-                <i class="fas fa-list-ul text-blue-600 mr-2"></i>
-                アウトライン生成プロンプト
-              </h3>
-              <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
-                <input type="text" id="outline-prompt-name" value="${escapeHtml(outlinePrompt.name)}" 
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-              </div>
-              <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">
-                  プロンプト本文
-                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{max_chars}}, {{tone}}</span>
-                </label>
-                <textarea id="outline-prompt-body" rows="8" 
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(outlinePrompt.body)}</textarea>
-              </div>
-              <button onclick="savePrompt(${outlinePrompt.id}, 'outline')" 
-                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                <i class="fas fa-save mr-2"></i>保存
-              </button>
-              <div id="outline-prompt-status" class="mt-3"></div>
-            </div>
-          ` : ''}
-          
-          ${articlePrompt ? `
-            <div class="mb-4 p-4 border rounded-lg">
-              <h3 class="font-bold text-gray-800 mb-2">
-                <i class="fas fa-file-alt text-green-600 mr-2"></i>
-                記事執筆プロンプト
-              </h3>
-              <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">プロンプト名</label>
-                <input type="text" id="article-prompt-name" value="${escapeHtml(articlePrompt.name)}" 
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-              </div>
-              <div class="mb-3">
-                <label class="block text-gray-700 text-sm font-bold mb-2">
-                  プロンプト本文
-                  <span class="text-xs text-gray-500 ml-2">変数: {{keyword}}, {{outline}}, {{max_chars}}, {{tone}}</span>
-                </label>
-                <textarea id="article-prompt-body" rows="8" 
-                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">${escapeHtml(articlePrompt.body)}</textarea>
-              </div>
-              <button onclick="savePrompt(${articlePrompt.id}, 'article')" 
-                class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-                <i class="fas fa-save mr-2"></i>保存
-              </button>
-              <div id="article-prompt-status" class="mt-3"></div>
-            </div>
-          ` : ''}
-        `;
-      }
-    }
-  } catch (error) {
-    console.error('Load prompts error:', error);
   }
 }
 
