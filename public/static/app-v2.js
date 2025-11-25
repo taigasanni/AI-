@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.3.0 (Code Cleanup)
+// Version: 2.4.0 (Topic Cluster Mind Map)
 // ===================================
 
 const API_BASE = '/api';

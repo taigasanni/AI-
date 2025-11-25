@@ -33,6 +33,7 @@ internalLinksApi.get('/', async (c) => {
 
     return c.json({
       success: true,
+      links: links.results || [],
       data: links.results || []
     });
 
@@ -143,10 +144,10 @@ internalLinksApi.post('/', async (c) => {
     } = body;
 
     // 必須フィールドのバリデーション
-    if (!from_article_id || !from_heading || !to_article_id) {
+    if (!from_article_id || !to_article_id) {
       return c.json({
         success: false,
-        error: 'Missing required fields'
+        error: 'Missing required fields: from_article_id and to_article_id are required'
       }, 400);
     }
 
