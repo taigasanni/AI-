@@ -62,6 +62,58 @@ async function getDecorationTemplate(db: D1Database, userId: number): Promise<st
   return template?.template_content || '';
 }
 
+// ヘルパー: 関連記事を検索
+async function getRelatedArticles(db: D1Database, userId: number, keyword: string): Promise<string> {
+  // キーワードに関連する公開記事を検索
+  const articles = await db.prepare(`
+    SELECT id, title, slug, meta_description, target_keywords
+    FROM articles
+    WHERE user_id = ? 
+      AND status = 'published'
+      AND (
+        title LIKE ? OR
+        meta_description LIKE ? OR
+        target_keywords LIKE ? OR
+        content LIKE ?
+      )
+    ORDER BY created_at DESC
+    LIMIT 5
+  `).bind(
+    userId,
+    `%${keyword}%`,
+    `%${keyword}%`,
+    `%${keyword}%`,
+    `%${keyword}%`
+  ).all();
+
+  if (!articles.results || articles.results.length === 0) {
+    return '';
+  }
+
+  // 関連記事情報をフォーマット
+  const relatedArticlesText = articles.results.map((article: any) => {
+    const url = article.slug ? `/blog/${article.slug}` : `/blog/${article.id}`;
+    return `- **${article.title}** (${url})
+  概要: ${article.meta_description || '関連する内容を含む記事'}
+  キーワード: ${article.target_keywords || 'N/A'}`;
+  }).join('\n\n');
+
+  return `
+## 内部リンク候補
+
+以下は既に公開されている関連記事です。適切な箇所で自然に内部リンクとして参照してください：
+
+${relatedArticlesText}
+
+内部リンクの挿入ルール：
+1. 文脈に合う場所で自然に言及する
+2. アンカーテキストは具体的で分かりやすく
+3. 読者にとって価値のある関連情報として紹介
+4. 無理に全てのリンクを使う必要はない（適切なもののみ）
+5. Markdown形式で記述: [アンカーテキスト](URL)
+`;
+}
+
 // ヘルパー: ユーザーのAI設定を取得
 async function getUserAIConfig(db: D1Database, userId: number, envVars: any, useCase: string = 'article') {
   // ユーザーのモデル設定を取得
@@ -153,6 +205,9 @@ generate.post('/outline', async (c) => {
     // 文字数目標を取得
     const targetChars = mergedParams.max_chars || '3000';
 
+    // 関連記事を検索
+    const relatedArticles = await getRelatedArticles(c.env.DB, user.userId, keyword);
+
     // プロンプトテンプレートに変数を埋め込み
     let finalPrompt = prompt.body
       .replace(/\{\{keyword\}\}/g, keyword)
@@ -168,6 +223,11 @@ generate.post('/outline', async (c) => {
 
 この文字数を達成できる、十分に詳細な構成を作成してください。
 各セクションに具体的な内容と十分なボリュームを確保してください。`;
+
+    // 関連記事が存在する場合は追加
+    if (relatedArticles) {
+      finalPrompt += '\n\n' + relatedArticles + '\n\n※アウトラインでは、これらの関連記事を参照できるセクションを考慮してください。';
+    }
 
     // ユーザーのAI設定を取得
     const { provider, apiKey, modelName } = await getUserAIConfig(c.env.DB, user.userId, c.env, 'outline');
@@ -264,6 +324,9 @@ generate.post('/article', async (c) => {
     // 装飾テンプレートを取得
     const decorationTemplate = await getDecorationTemplate(c.env.DB, user.userId);
 
+    // 関連記事を検索
+    const relatedArticles = await getRelatedArticles(c.env.DB, user.userId, keyword);
+
     // 文字数目標を取得
     const targetChars = mergedParams.max_chars || '3000';
     const minChars = Math.floor(parseInt(targetChars) * 0.9); // 目標の90%
@@ -303,6 +366,11 @@ generate.post('/article', async (c) => {
     // 装飾テンプレートが存在する場合は追加
     if (decorationTemplate) {
       finalPrompt += '\n\n## 記事装飾ルール\n\n以下の装飾ルールに従って、視覚的に魅力的で読みやすい記事を作成してください：\n\n' + decorationTemplate;
+    }
+
+    // 関連記事が存在する場合は追加
+    if (relatedArticles) {
+      finalPrompt += '\n\n' + relatedArticles;
     }
 
     // ユーザーのAI設定を取得

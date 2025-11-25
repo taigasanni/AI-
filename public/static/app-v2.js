@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.7 (Fix Supervisor Card Position Below TOC)
+// Version: 2.6.0 (Auto Internal Link Suggestions)
 // ===================================
 
 const API_BASE = '/api';
