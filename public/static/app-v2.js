@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.2 (Fix Supervisor Selection)
+// Version: 2.5.3 (Fix Supervisor Save/Edit/Delete)
 // ===================================
 
 const API_BASE = '/api';
@@ -1152,22 +1152,22 @@ async function saveArticle() {
       const supervisorId = document.getElementById('article-supervisor')?.value;
       if (supervisorId) {
         // 監修者を設定
-        await fetch(`${API_BASE_URL}/supervisors/article/${articleId}`, {
+        await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'X-User-Id': currentUser.id
+            'Authorization': `Bearer ${authToken}`,
+            'X-User-Id': currentUser.id.toString()
           },
           body: JSON.stringify({ supervisor_id: supervisorId })
         });
       } else {
         // 監修者を削除（監修者なしを選択した場合）
-        await fetch(`${API_BASE_URL}/supervisors/article/${articleId}`, {
+        await fetch(`${API_BASE}/supervisors/article/${articleId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'X-User-Id': currentUser.id
+            'Authorization': `Bearer ${authToken}`,
+            'X-User-Id': currentUser.id.toString()
           }
         });
       }
@@ -5110,10 +5110,15 @@ function insertImageToArticle(imageUrl, altText) {
 // 監修者一覧を読み込む
 async function loadSupervisors() {
   try {
-    const response = await fetch(`${API_BASE_URL}/supervisors`, {
+    if (!currentUser || !currentUser.id) {
+      console.error('Current user not found');
+      return;
+    }
+
+    const response = await fetch(`${API_BASE}/supervisors`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'X-User-Id': currentUser.id
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5198,10 +5203,15 @@ function cancelSupervisorForm() {
 // 監修者を編集
 async function editSupervisor(supervisorId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/supervisors/${supervisorId}`, {
+    if (!currentUser || !currentUser.id) {
+      showToast('ユーザー情報が取得できません', 'error');
+      return;
+    }
+
+    const response = await fetch(`${API_BASE}/supervisors/${supervisorId}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'X-User-Id': currentUser.id
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5235,6 +5245,11 @@ async function saveSupervisor() {
     return;
   }
 
+  if (!currentUser || !currentUser.id) {
+    showToast('ユーザー情報が取得できません', 'error');
+    return;
+  }
+
   const data = {
     name,
     title: document.getElementById('supervisor-title').value.trim() || null,
@@ -5247,8 +5262,8 @@ async function saveSupervisor() {
 
   try {
     const url = editingSupervisorId 
-      ? `${API_BASE_URL}/supervisors/${editingSupervisorId}`
-      : `${API_BASE_URL}/supervisors`;
+      ? `${API_BASE}/supervisors/${editingSupervisorId}`
+      : `${API_BASE}/supervisors`;
     
     const method = editingSupervisorId ? 'PUT' : 'POST';
 
@@ -5256,20 +5271,23 @@ async function saveSupervisor() {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'X-User-Id': currentUser.id
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-Id': currentUser.id.toString()
       },
       body: JSON.stringify(data)
     });
 
-    if (!response.ok) throw new Error('Failed to save supervisor');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save supervisor');
+    }
 
     showToast(editingSupervisorId ? '監修者を更新しました' : '監修者を追加しました', 'success');
     cancelSupervisorForm();
     loadSupervisors();
   } catch (error) {
     console.error('Save supervisor error:', error);
-    showToast('監修者の保存に失敗しました', 'error');
+    showToast('監修者の保存に失敗しました: ' + error.message, 'error');
   }
 }
 
@@ -5279,12 +5297,17 @@ async function deleteSupervisor(supervisorId) {
     return;
   }
 
+  if (!currentUser || !currentUser.id) {
+    showToast('ユーザー情報が取得できません', 'error');
+    return;
+  }
+
   try {
-    const response = await fetch(`${API_BASE_URL}/supervisors/${supervisorId}`, {
+    const response = await fetch(`${API_BASE}/supervisors/${supervisorId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'X-User-Id': currentUser.id
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-Id': currentUser.id.toString()
       }
     });
 
