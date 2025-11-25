@@ -200,8 +200,8 @@ app.get('/admin', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app-v2.js?v=6"></script>
-        <script src="/static/internal-links.js?v=6"></script>
+        <script src="/static/app-v2.js?v=7"></script>
+        <script src="/static/internal-links.js?v=7"></script>
         <script src="/static/image-library.js?v=6"></script>
         <script src="/static/user-management.js?v=6"></script>
     </body>

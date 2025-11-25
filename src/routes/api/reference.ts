@@ -11,28 +11,63 @@ const reference = new Hono<{ Bindings: Env }>();
 reference.use('*', authMiddleware);
 
 /**
- * GET /api/reference - 参照データ一覧取得
+ * GET /api/reference - 参照データ一覧取得（公開記事も含む）
  */
 reference.get('/', async (c) => {
   try {
     const user = c.get('user');
     const { category } = c.req.query();
 
-    let query = 'SELECT * FROM reference_data WHERE user_id = ?';
-    const params: any[] = [user.userId];
+    // 手動追加の参照データを取得
+    let manualQuery = 'SELECT * FROM reference_data WHERE user_id = ?';
+    const manualParams: any[] = [user.userId];
 
-    if (category) {
-      query += ' AND category = ?';
-      params.push(category);
+    if (category && category !== 'article') {
+      manualQuery += ' AND category = ?';
+      manualParams.push(category);
     }
 
-    query += ' ORDER BY created_at DESC';
+    manualQuery += ' ORDER BY created_at DESC';
 
-    const result = await c.env.DB.prepare(query).bind(...params).all();
+    const manualResult = await c.env.DB.prepare(manualQuery).bind(...manualParams).all();
+    const manualData = (manualResult.results || []) as any[];
+
+    // カテゴリーフィルターが'article'または'all'の場合、公開記事も取得
+    let publishedArticles: any[] = [];
+    if (!category || category === 'all' || category === 'article') {
+      const articlesResult = await c.env.DB.prepare(
+        `SELECT 
+          id,
+          title,
+          content,
+          meta_description as description,
+          target_keywords as tags,
+          published_at as created_at,
+          updated_at,
+          slug,
+          'article' as category,
+          1 as is_auto_added
+         FROM articles 
+         WHERE user_id = ? AND status = 'published'
+         ORDER BY published_at DESC`
+      ).bind(user.userId).all();
+
+      publishedArticles = (articlesResult.results || []) as any[];
+    }
+
+    // 手動データと公開記事を結合
+    const combinedData = [...manualData, ...publishedArticles];
+
+    // created_atで降順ソート
+    combinedData.sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
 
     return c.json<APIResponse>({
       success: true,
-      data: result.results || []
+      data: combinedData
     });
 
   } catch (error: any) {
@@ -45,18 +80,43 @@ reference.get('/', async (c) => {
 });
 
 /**
- * GET /api/reference/:id - 参照データ詳細取得
+ * GET /api/reference/:id - 参照データ詳細取得（公開記事も取得可能）
  */
 reference.get('/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const user = c.get('user');
 
+    // まず手動参照データから検索
     const data = await c.env.DB.prepare(
       'SELECT * FROM reference_data WHERE id = ? AND user_id = ?'
     ).bind(id, user.userId).first();
 
-    if (!data) {
+    if (data) {
+      return c.json<APIResponse>({
+        success: true,
+        data
+      });
+    }
+
+    // 手動データが見つからない場合、公開記事から検索
+    const article = await c.env.DB.prepare(
+      `SELECT 
+        id,
+        title,
+        content,
+        meta_description as description,
+        target_keywords as tags,
+        published_at as created_at,
+        updated_at,
+        slug,
+        'article' as category,
+        1 as is_auto_added
+       FROM articles 
+       WHERE id = ? AND user_id = ? AND status = 'published'`
+    ).bind(id, user.userId).first();
+
+    if (!article) {
       return c.json<APIResponse>({
         success: false,
         error: 'Reference data not found'
@@ -65,7 +125,7 @@ reference.get('/:id', async (c) => {
 
     return c.json<APIResponse>({
       success: true,
-      data
+      data: article
     });
 
   } catch (error: any) {

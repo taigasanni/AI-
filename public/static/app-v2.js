@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.4.0 (Topic Cluster Mind Map)
+// Version: 2.5.0 (Auto-Reference Published Articles)
 // ===================================
 
 const API_BASE = '/api';
@@ -2717,18 +2717,31 @@ async function loadReferenceData(category = null) {
         listEl.innerHTML = `
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             ${referenceList.map(ref => `
-              <div class="border rounded-lg p-4 hover:shadow-lg transition">
+              <div class="border rounded-lg p-4 hover:shadow-lg transition ${ref.is_auto_added ? 'border-blue-300 bg-blue-50' : ''}">
                 <div class="flex justify-between items-start mb-2">
                   <h3 class="font-bold text-lg text-gray-800">${escapeHtml(ref.title)}</h3>
-                  <span class="text-xs px-2 py-1 rounded ${getCategoryColor(ref.category)}">
-                    ${getCategoryLabel(ref.category)}
-                  </span>
+                  <div class="flex flex-col gap-1 items-end">
+                    <span class="text-xs px-2 py-1 rounded ${getCategoryColor(ref.category)}">
+                      ${getCategoryLabel(ref.category)}
+                    </span>
+                    ${ref.is_auto_added ? `
+                      <span class="text-xs px-2 py-1 rounded bg-blue-500 text-white">
+                        <i class="fas fa-magic mr-1"></i>自動追加
+                      </span>
+                    ` : ''}
+                  </div>
                 </div>
                 ${ref.description ? `
                   <p class="text-sm text-gray-600 mb-3">${escapeHtml(ref.description)}</p>
                 ` : ''}
                 <div class="text-xs text-gray-500 mb-3">
+                  <i class="far fa-calendar mr-1"></i>
                   ${new Date(ref.created_at).toLocaleDateString('ja-JP')}
+                  ${ref.slug ? `
+                    <a href="/blog/${ref.slug}" target="_blank" class="ml-2 text-blue-600 hover:underline">
+                      <i class="fas fa-external-link-alt mr-1"></i>公開ページ
+                    </a>
+                  ` : ''}
                 </div>
                 ${ref.tags ? `
                   <div class="flex flex-wrap gap-1 mb-3">
@@ -2738,15 +2751,21 @@ async function loadReferenceData(category = null) {
                   </div>
                 ` : ''}
                 <div class="flex gap-2">
-                  <button onclick="viewReferenceData(${ref.id})" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
+                  <button onclick="viewReferenceData(${ref.id}, ${ref.is_auto_added ? true : false})" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
                     <i class="fas fa-eye mr-1"></i>表示
                   </button>
-                  <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
-                    <i class="fas fa-edit mr-1"></i>編集
-                  </button>
-                  <button onclick="deleteReferenceData(${ref.id})" class="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600">
-                    <i class="fas fa-trash"></i>
-                  </button>
+                  ${!ref.is_auto_added ? `
+                    <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
+                      <i class="fas fa-edit mr-1"></i>編集
+                    </button>
+                    <button onclick="deleteReferenceData(${ref.id})" class="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  ` : `
+                    <span class="text-xs text-gray-500 flex items-center px-2">
+                      記事から自動反映
+                    </span>
+                  `}
                 </div>
               </div>
             `).join('')}
@@ -2891,7 +2910,7 @@ async function saveReferenceData(id = null) {
   }
 }
 
-async function viewReferenceData(id) {
+async function viewReferenceData(id, isAutoAdded = false) {
   try {
     const response = await fetch(`${API_BASE}/reference/${id}`, {
       headers: {
@@ -2912,12 +2931,19 @@ async function viewReferenceData(id) {
             </button>
           </div>
           
-          <div class="bg-white rounded-lg shadow-lg p-8">
+          <div class="bg-white rounded-lg shadow-lg p-8 ${isAutoAdded ? 'border-2 border-blue-300' : ''}">
             <div class="flex justify-between items-start mb-6">
               <h2 class="text-3xl font-bold text-gray-800">${escapeHtml(ref.title)}</h2>
-              <span class="text-sm px-3 py-1 rounded ${getCategoryColor(ref.category)}">
-                ${getCategoryLabel(ref.category)}
-              </span>
+              <div class="flex flex-col gap-2 items-end">
+                <span class="text-sm px-3 py-1 rounded ${getCategoryColor(ref.category)}">
+                  ${getCategoryLabel(ref.category)}
+                </span>
+                ${isAutoAdded ? `
+                  <span class="text-sm px-3 py-1 rounded bg-blue-500 text-white">
+                    <i class="fas fa-magic mr-1"></i>公開記事から自動追加
+                  </span>
+                ` : ''}
+              </div>
             </div>
             
             ${ref.description ? `
@@ -2940,6 +2966,14 @@ async function viewReferenceData(id) {
               </div>
             ` : ''}
             
+            ${ref.slug ? `
+              <div class="mb-4">
+                <a href="/blog/${ref.slug}" target="_blank" class="text-blue-600 hover:underline text-sm">
+                  <i class="fas fa-external-link-alt mr-1"></i>公開ページを表示
+                </a>
+              </div>
+            ` : ''}
+            
             <div class="border-t pt-6 mb-6">
               <div class="bg-gray-50 p-6 rounded-lg">
                 <pre class="whitespace-pre-wrap font-sans">${escapeHtml(ref.content)}</pre>
@@ -2951,17 +2985,31 @@ async function viewReferenceData(id) {
               ${ref.updated_at !== ref.created_at ? `<br>更新日: ${new Date(ref.updated_at).toLocaleString('ja-JP')}` : ''}
             </div>
             
-            <div class="flex gap-4">
-              <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">
-                <i class="fas fa-edit mr-2"></i>編集
-              </button>
-              <button onclick="copyReferenceContent(${ref.id})" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
-                <i class="fas fa-copy mr-2"></i>コピー
-              </button>
-              <button onclick="deleteReferenceData(${ref.id})" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">
-                <i class="fas fa-trash mr-2"></i>削除
-              </button>
-            </div>
+            ${isAutoAdded ? `
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  この参照データは公開記事から自動的に追加されたものです。編集・削除は記事管理画面から行ってください。
+                </p>
+              </div>
+              <div class="flex gap-4">
+                <button onclick="copyReferenceContent(${ref.id})" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-copy mr-2"></i>コピー
+                </button>
+              </div>
+            ` : `
+              <div class="flex gap-4">
+                <button onclick="editReferenceData(${ref.id})" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">
+                  <i class="fas fa-edit mr-2"></i>編集
+                </button>
+                <button onclick="copyReferenceContent(${ref.id})" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-copy mr-2"></i>コピー
+                </button>
+                <button onclick="deleteReferenceData(${ref.id})" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">
+                  <i class="fas fa-trash mr-2"></i>削除
+                </button>
+              </div>
+            `}
           </div>
         </div>
       `;
