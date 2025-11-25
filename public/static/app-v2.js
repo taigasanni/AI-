@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.3 (Fix Supervisor Save/Edit/Delete)
+// Version: 2.5.4 (Fix Supervisor API Authentication)
 // ===================================
 
 const API_BASE = '/api';
@@ -1157,7 +1157,6 @@ async function saveArticle() {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-            'X-User-Id': currentUser.id.toString()
           },
           body: JSON.stringify({ supervisor_id: supervisorId })
         });
@@ -1167,7 +1166,6 @@ async function saveArticle() {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`,
-            'X-User-Id': currentUser.id.toString()
           }
         });
       }
@@ -5118,7 +5116,6 @@ async function loadSupervisors() {
     const response = await fetch(`${API_BASE}/supervisors`, {
       headers: {
         'Authorization': `Bearer ${authToken}`,
-        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5211,7 +5208,6 @@ async function editSupervisor(supervisorId) {
     const response = await fetch(`${API_BASE}/supervisors/${supervisorId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`,
-        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5245,11 +5241,6 @@ async function saveSupervisor() {
     return;
   }
 
-  if (!currentUser || !currentUser.id) {
-    showToast('ユーザー情報が取得できません', 'error');
-    return;
-  }
-
   const data = {
     name,
     title: document.getElementById('supervisor-title').value.trim() || null,
@@ -5271,8 +5262,7 @@ async function saveSupervisor() {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-        'X-User-Id': currentUser.id.toString()
+        'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify(data)
     });
@@ -5307,7 +5297,6 @@ async function deleteSupervisor(supervisorId) {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`,
-        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5333,7 +5322,6 @@ async function loadSupervisorsForArticle() {
     const response = await fetch(`${API_BASE}/supervisors`, {
       headers: {
         'Authorization': `Bearer ${authToken}`,
-        'X-User-Id': currentUser.id.toString()
       }
     });
 
@@ -5361,7 +5349,6 @@ async function loadSupervisorsForArticle() {
       const supervisorResponse = await fetch(`${API_BASE}/supervisors/article/${contentFlow.editingArticleId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
-          'X-User-Id': currentUser.id.toString()
         }
       });
 

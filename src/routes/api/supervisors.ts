@@ -1,26 +1,22 @@
 import { Hono } from 'hono';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { Env, APIResponse } from '../../types';
+import { authMiddleware } from '../../middleware/auth';
 
-type Bindings = {
-  DB: D1Database;
-};
+const supervisors = new Hono<{ Bindings: Env }>();
 
-const supervisors = new Hono<{ Bindings: Bindings }>();
+// 認証ミドルウェアを適用
+supervisors.use('*', authMiddleware);
 
 // 監修者一覧取得
 supervisors.get('/', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+    const user = c.get('user');
 
     const { results } = await c.env.DB.prepare(`
       SELECT * FROM supervisors 
       WHERE user_id = ? 
       ORDER BY created_at DESC
-    `).bind(userId).all();
+    `).bind(user.userId).all();
 
     return c.json({ supervisors: results });
   } catch (error: any) {
@@ -32,17 +28,13 @@ supervisors.get('/', async (c) => {
 // 監修者詳細取得
 supervisors.get('/:id', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
+    const user = c.get('user');
     const supervisorId = c.req.param('id');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
 
     const supervisor = await c.env.DB.prepare(`
       SELECT * FROM supervisors 
       WHERE id = ? AND user_id = ?
-    `).bind(supervisorId, userId).first();
+    `).bind(supervisorId, user.userId).first();
 
     if (!supervisor) {
       return c.json({ error: 'Supervisor not found' }, 404);
@@ -58,11 +50,7 @@ supervisors.get('/:id', async (c) => {
 // 監修者作成
 supervisors.post('/', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+    const user = c.get('user');
 
     const { name, title, description, avatar_url, website_url, twitter_url, linkedin_url } = await c.req.json();
 
@@ -74,7 +62,7 @@ supervisors.post('/', async (c) => {
       INSERT INTO supervisors (user_id, name, title, description, avatar_url, website_url, twitter_url, linkedin_url, is_active)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `).bind(
-      userId,
+      user.userId,
       name,
       title || null,
       description || null,
@@ -98,19 +86,15 @@ supervisors.post('/', async (c) => {
 // 監修者更新
 supervisors.put('/:id', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
+    const user = c.get('user');
     const supervisorId = c.req.param('id');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
 
     const { name, title, description, avatar_url, website_url, twitter_url, linkedin_url, is_active } = await c.req.json();
 
     // 監修者が存在するか確認
     const existing = await c.env.DB.prepare(`
       SELECT * FROM supervisors WHERE id = ? AND user_id = ?
-    `).bind(supervisorId, userId).first();
+    `).bind(supervisorId, user.userId).first();
 
     if (!existing) {
       return c.json({ error: 'Supervisor not found' }, 404);
@@ -138,7 +122,7 @@ supervisors.put('/:id', async (c) => {
       linkedin_url || null,
       is_active !== undefined ? is_active : 1,
       supervisorId,
-      userId
+      user.userId
     ).run();
 
     const updated = await c.env.DB.prepare(`
@@ -155,17 +139,13 @@ supervisors.put('/:id', async (c) => {
 // 監修者削除
 supervisors.delete('/:id', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
+    const user = c.get('user');
     const supervisorId = c.req.param('id');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
 
     // 監修者が存在するか確認
     const existing = await c.env.DB.prepare(`
       SELECT * FROM supervisors WHERE id = ? AND user_id = ?
-    `).bind(supervisorId, userId).first();
+    `).bind(supervisorId, user.userId).first();
 
     if (!existing) {
       return c.json({ error: 'Supervisor not found' }, 404);
@@ -179,7 +159,7 @@ supervisors.delete('/:id', async (c) => {
     // 監修者を削除
     await c.env.DB.prepare(`
       DELETE FROM supervisors WHERE id = ? AND user_id = ?
-    `).bind(supervisorId, userId).run();
+    `).bind(supervisorId, user.userId).run();
 
     return c.json({ success: true });
   } catch (error: any) {
@@ -191,12 +171,8 @@ supervisors.delete('/:id', async (c) => {
 // 記事に監修者を設定
 supervisors.post('/article/:articleId', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
+    const user = c.get('user');
     const articleId = c.req.param('articleId');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
 
     const { supervisor_id } = await c.req.json();
 
@@ -207,7 +183,7 @@ supervisors.post('/article/:articleId', async (c) => {
     // 記事が存在するか確認
     const article = await c.env.DB.prepare(`
       SELECT * FROM articles WHERE id = ? AND user_id = ?
-    `).bind(articleId, userId).first();
+    `).bind(articleId, user.userId).first();
 
     if (!article) {
       return c.json({ error: 'Article not found' }, 404);
@@ -216,7 +192,7 @@ supervisors.post('/article/:articleId', async (c) => {
     // 監修者が存在するか確認
     const supervisor = await c.env.DB.prepare(`
       SELECT * FROM supervisors WHERE id = ? AND user_id = ?
-    `).bind(supervisor_id, userId).first();
+    `).bind(supervisor_id, user.userId).first();
 
     if (!supervisor) {
       return c.json({ error: 'Supervisor not found' }, 404);
@@ -243,17 +219,13 @@ supervisors.post('/article/:articleId', async (c) => {
 // 記事の監修者を削除
 supervisors.delete('/article/:articleId', async (c) => {
   try {
-    const userId = c.req.header('X-User-Id');
+    const user = c.get('user');
     const articleId = c.req.param('articleId');
-    
-    if (!userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
 
     // 記事が存在するか確認
     const article = await c.env.DB.prepare(`
       SELECT * FROM articles WHERE id = ? AND user_id = ?
-    `).bind(articleId, userId).first();
+    `).bind(articleId, user.userId).first();
 
     if (!article) {
       return c.json({ error: 'Article not found' }, 404);
