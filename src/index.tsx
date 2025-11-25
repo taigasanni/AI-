@@ -172,11 +172,7 @@ app.get('/admin', (c) => {
                         <i class="fas fa-images w-6"></i>
                         <span>画像ライブラリ</span>
                     </a>
-                    <a href="#" onclick="showReferenceData()" data-page="reference" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
-                        <i class="fas fa-database w-6"></i>
-                        <span>参照データ管理</span>
-                    </a>
-                    <div class="border-t my-4"></div>
+
                     <a href="#" onclick="event.preventDefault(); showUserManagement(); return false;" data-page="users" class="sidebar-link flex items-center px-4 py-3 text-gray-700 rounded-lg mb-2">
                         <i class="fas fa-users w-6"></i>
                         <span>ユーザー管理</span>
@@ -200,8 +196,8 @@ app.get('/admin', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app-v2.js?v=7"></script>
-        <script src="/static/internal-links.js?v=7"></script>
+        <script src="/static/app-v2.js?v=8"></script>
+        <script src="/static/internal-links.js?v=8"></script>
         <script src="/static/image-library.js?v=6"></script>
         <script src="/static/user-management.js?v=6"></script>
     </body>

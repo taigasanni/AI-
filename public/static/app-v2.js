@@ -1,6 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
-// Version: 2.5.0 (Auto-Reference Published Articles)
+// Version: 2.5.1 (Remove Reference Data Tab)
 // ===================================
 
 const API_BASE = '/api';
