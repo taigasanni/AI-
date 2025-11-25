@@ -1,5 +1,6 @@
 // ===================================
 // AI Blog CMS v2 - Simplified Version
+// Version: 2.1.0 (Supervisor Feature Added)
 // ===================================
 
 const API_BASE = '/api';
